@@ -201,7 +201,7 @@ const PHYS={VMAX:180, WHEELBASE:3.2, MAXSTEER:0.42, G:9.81, MU:1.12, DF:0.0013, 
 function gripCap(v,mu){return PHYS.G*(mu + PHYS.DF*v*v);}   // max lateral accel (m/s^2)
 
 /* ------------------------------- TRACKS --------------------------------- */
-const TRACK_W=15, HALF=TRACK_W/2;
+const TRACK_W=20, HALF=TRACK_W/2, BARRIER_OFF=2.0, CAR_HW=0.85;   // wider track
 const TRACKS=[
   {name:'Silverlake', N:320, wp:[[-450,-175],[-100,-190],[260,-182],[430,-155],[490,-80],[465,10],[370,40],
     [300,120],[380,190],[480,200],[470,285],[370,310],[250,280],[210,200],[140,255],[80,195],[10,235],
@@ -217,8 +217,8 @@ const EXTRA_NAMES=['Sunset Ridge','Neon Bay','Dust Valley','Ironworks','Alpine L
   'Riverside','Blackwood','Grand Mesa','Silver Coast','Thornfield','Aurora Park','Crimson Flats','Vortex Ring',
   'Highcliff','Emerald Vale','Nova Circuit','Titan Speedway','Phoenix Rise'];
 for(let i=0;i<20;i++){ const r=mulberry32(1000+i*97);
-  const R=250+Math.floor(r()*170), SX=1.0+r()*0.65, SY=0.9+r()*0.55, nc=3+Math.floor(r()*2), coeffs=[];
-  for(let k=0;k<nc;k++)coeffs.push([2+k, 0.045+r()*0.07, r()*TAU]);
+  const R=340+Math.floor(r()*190), SX=1.0+r()*0.6, SY=0.9+r()*0.5, nc=3+Math.floor(r()*2), coeffs=[];
+  for(let k=0;k<nc;k++)coeffs.push([2+k, 0.04+r()*0.055, r()*TAU]);
   TRACKS.push({name:EXTRA_NAMES[i], N:300, gen:{R,SX,SY,coeffs}});
 }
 TRACKS.forEach((t,i)=>{ t.price = i===0?0 : Math.round(300+Math.pow(i,1.55)*55); });   // first map free
@@ -384,14 +384,23 @@ function offTrack(car){
   }
   const edge=HALF+1.3; return best>edge*edge;   // kerbs are drivable; only grass counts as off
 }
-// keep cars inside the advertising-board barriers (they can't leave the track)
+// keep cars inside the advertising-board barriers (solid — you can't drive through them)
 function clampToWalls(car){
-  const i=car.node,p=T.c[i],n=T.nrm[i];
-  const lat=(car.x-p.x)*n.x+(car.y-p.y)*n.y;
-  const WALL=HALF+1.45, INSIDE=HALF+1.0;
-  if(Math.abs(lat)>WALL){ const sgn=Math.sign(lat), d=sgn*INSIDE-lat;
-    car.x+=n.x*d; car.y+=n.y*d; car.spd*=0.5;
-    if(car.isPlayer){camShake=Math.min(1,camShake+0.35); if(hitCd<=0){thud();hitCd=0.3;}}
+  const i=car.node,N=T.N; let best=1e18, bn=i;
+  for(let s=-2;s<=1;s++){                     // nearest track segment (accurate through corners)
+    const a=T.c[(i+s+N)%N],b=T.c[(i+s+1+N)%N];
+    const vx=b.x-a.x,vy=b.y-a.y,L2=vx*vx+vy*vy||1;
+    let t=((car.x-a.x)*vx+(car.y-a.y)*vy)/L2; t=t<0?0:t>1?1:t;
+    const px=a.x+vx*t,py=a.y+vy*t,dx=car.x-px,dy=car.y-py,d=dx*dx+dy*dy;
+    if(d<best){best=d;bn=(i+s+N)%N;}
+  }
+  const n=T.nrm[bn],p=T.c[bn], lat=(car.x-p.x)*n.x+(car.y-p.y)*n.y;
+  const WALL=HALF+BARRIER_OFF-CAR_HW;          // stop the car BODY at the barrier, not its centre
+  if(Math.abs(lat)>WALL){ const sgn=lat<0?-1:1, push=sgn*WALL-lat;
+    car.x+=n.x*push; car.y+=n.y*push;          // snap fully back inside — no penetration
+    // scrub the into-wall velocity so you scrape along, not bounce off
+    car.spd*=0.55;
+    if(car.isPlayer){camShake=Math.min(1,camShake+0.4); if(hitCd<=0){thud();hitCd=0.3;}}
   }
 }
 function driveCar(car,thr,brk,steerIn,hand,dt){
@@ -639,23 +648,26 @@ function buildWorld(){
   const inst=new THREE.InstancedMesh(tg,tm,Math.max(1,T.trees.length));inst.castShadow=true;const d=new THREE.Object3D();
   T.trees.forEach((tr,i)=>{d.position.set(tr.x,tr.r*1.4,tr.y);d.scale.set(tr.r,tr.r*2.8,tr.r);d.updateMatrix();inst.setMatrixAt(i,d.matrix);});
   trackGroup.add(inst);
-  // grandstands along the start straight + start/finish gantry
-  {const c0=T.c[0],t0=T.tan[0],n0=T.nrm[0],ang=Math.atan2(t0.y,t0.x);
-   for(let k=-1;k<=1;k++){
-     const along=k*30, bx=c0.x+t0.x*along+n0.x*(HALF+13), bz=c0.y+t0.y*along+n0.y*(HALF+13);
-     const stand=new THREE.Mesh(new THREE.BoxGeometry(26,8,10),matCrowd);
-     stand.position.set(bx,4,bz);stand.rotation.y=-ang;stand.castShadow=true;stand.receiveShadow=true;trackGroup.add(stand);
-     const roof=new THREE.Mesh(new THREE.BoxGeometry(27,1.2,11),matStand);
-     roof.position.set(bx,8.4,bz);roof.rotation.y=-ang;roof.castShadow=true;trackGroup.add(roof);
+  // grandstands ringing the whole circuit (outer side of the loop) + start/finish gantry
+  {const cx=(T.minx+T.maxx)/2, cy=(T.miny+T.maxy)/2;
+   const standGeo=new THREE.BoxGeometry(34,10,9), roofGeo=new THREE.BoxGeometry(35,1.2,10), backGeo=new THREE.BoxGeometry(35,12,1);
+   for(let i=0;i<T.N;i+=20){
+     const t=T.tan[i], n=T.nrm[i];
+     const out=((T.c[i].x-cx)*n.x+(T.c[i].y-cy)*n.y)>=0?1:-1;      // face of the loop that points outward
+     const bx=T.c[i].x+n.x*out*(HALF+17), bz=T.c[i].y+n.y*out*(HALF+17), ry=-Math.atan2(t.y,t.x);
+     const st=new THREE.Mesh(standGeo,matCrowd);st.position.set(bx,5,bz);st.rotation.y=ry;st.castShadow=true;st.receiveShadow=true;trackGroup.add(st);
+     const rf=new THREE.Mesh(roofGeo,matStand);rf.position.set(bx,10.6,bz);rf.rotation.y=ry;rf.castShadow=true;trackGroup.add(rf);
+     const bk=new THREE.Mesh(backGeo,matStand);bk.position.set(bx+n.x*out*4.5,6,bz+n.y*out*4.5);bk.rotation.y=ry;trackGroup.add(bk);
    }
+   const c0=T.c[0],n0=T.nrm[0];   // start/finish gantry
    for(const s of [1,-1]){const p=new THREE.Mesh(new THREE.BoxGeometry(0.8,9,0.8),matPost);
-     p.position.set(c0.x+n0.x*s*(HALF+1.5),4.5,c0.y+n0.y*s*(HALF+1.5));p.castShadow=true;trackGroup.add(p);}
+     p.position.set(c0.x+n0.x*s*(HALF+BARRIER_OFF),4.5,c0.y+n0.y*s*(HALF+BARRIER_OFF));p.castShadow=true;trackGroup.add(p);}
    const ban=new THREE.Mesh(new THREE.BoxGeometry(TRACK_W+4,1.8,0.6),matBanner);
    ban.position.set(c0.x,8.6,c0.y);ban.rotation.y=Math.atan2(-n0.y,n0.x);trackGroup.add(ban);   // span across the track
   }
   // CONTINUOUS advertising-board barriers down BOTH sides of the whole track
   for(const side of [1,-1]){
-    const N=T.N,c=T.c,n=T.nrm,off=HALF+1.5,H=2.0,pos=[],idx=[],uv=[]; let u=0;
+    const N=T.N,c=T.c,n=T.nrm,off=HALF+BARRIER_OFF,H=2.0,pos=[],idx=[],uv=[]; let u=0;
     for(let i=0;i<=N;i++){ const ii=i%N;
       if(i>0){const pv=c[(i-1)%N];u+=Math.hypot(c[ii].x-pv.x,c[ii].y-pv.y)/48;}   // ~6m per ad panel
       const ex=c[ii].x+n[ii].x*side*off, ez=c[ii].y+n[ii].y*side*off;
