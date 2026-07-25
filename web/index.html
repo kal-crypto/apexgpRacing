@@ -11,6 +11,9 @@
     font-family:'Segoe UI',system-ui,Arial,sans-serif;-webkit-user-select:none;user-select:none;touch-action:none}
   #game{position:fixed;inset:0}
   canvas#c{position:absolute;inset:0;width:100%;height:100%;display:block}
+  #vignette{position:absolute;inset:0;pointer-events:none;z-index:5;
+    box-shadow:inset 0 0 240px 70px rgba(0,0,0,.42);
+    background:radial-gradient(120% 100% at 50% 42%,rgba(0,0,0,0) 55%,rgba(0,0,0,.28) 100%)}
   #hud{position:absolute;inset:0;pointer-events:none;font-variant-numeric:tabular-nums}
   .card{position:absolute;background:rgba(12,16,26,.6);border:1px solid var(--line);border-radius:12px;padding:10px 14px;backdrop-filter:blur(6px)}
   .lbl{font-size:11px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
@@ -100,6 +103,7 @@
 <body>
 <div id="game">
   <canvas id="c"></canvas>
+  <div id="vignette"></div>
   <div id="hud" class="hide">
     <div id="cash" class="card" style="top:14px;left:50%;transform:translateX(-50%);padding:8px 16px">🪙 <span id="raceCoinsHud">0</span> · <span id="cashHud" class="cash">$0</span></div>
     <div id="hudTL" class="card"><div class="lbl">Lap</div><div class="big"><span id="lapNow">1</span>/<span id="lapTot">3</span></div>
@@ -158,6 +162,15 @@
 </div>
 
 <script src="three.min.js"></script>
+<script src="pp/CopyShader.js"></script>
+<script src="pp/LuminosityHighPassShader.js"></script>
+<script src="pp/FXAAShader.js"></script>
+<script src="pp/GammaCorrectionShader.js"></script>
+<script src="pp/EffectComposer.js"></script>
+<script src="pp/ShaderPass.js"></script>
+<script src="pp/MaskPass.js"></script>
+<script src="pp/RenderPass.js"></script>
+<script src="pp/UnrealBloomPass.js"></script>
 <script src="GLTFLoader.js"></script>
 <script src="carmodel.js"></script>
 <!-- ▼ MULTIPLAYER: paste your Render server URL between the quotes to enable online
@@ -878,7 +891,24 @@ function updateHUD(){
 }
 
 /* ---- resize + loop ---- */
-function resize(){renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();}
+/* ---- post-processing (bloom + FXAA) for a more photographic look; safe fallback ---- */
+let composer=null, fxaaPass=null, bloomPass=null;
+try{
+  if(THREE.EffectComposer && THREE.RenderPass && THREE.UnrealBloomPass && THREE.ShaderPass && THREE.FXAAShader && THREE.GammaCorrectionShader){
+    composer=new THREE.EffectComposer(renderer);
+    composer.addPass(new THREE.RenderPass(scene,camera));
+    bloomPass=new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.32,0.55,0.85); // strength,radius,threshold
+    composer.addPass(bloomPass);
+    fxaaPass=new THREE.ShaderPass(THREE.FXAAShader);
+    composer.addPass(fxaaPass);
+    composer.addPass(new THREE.ShaderPass(THREE.GammaCorrectionShader)); // linear -> sRGB (correct colours)
+  }
+}catch(e){ composer=null; }
+function resize(){
+  renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+  if(composer){ composer.setSize(innerWidth,innerHeight);
+    if(fxaaPass){const pr=renderer.getPixelRatio();fxaaPass.material.uniforms['resolution'].value.set(1/(innerWidth*pr),1/(innerHeight*pr));} }
+}
 addEventListener('resize',resize);resize();
 let last=performance.now();
 function frame(now){
@@ -891,7 +921,7 @@ function frame(now){
   mpTick(dt); updateAudio();
   for(const m of coinGroup.children) m.rotation.y+=dt*3;   // spin coins
   updateSmoke(dt); updateSun(); updateCamera(dt);
-  renderer.render(scene,camera);
+  if(composer) composer.render(); else renderer.render(scene,camera);
   drawMinimap();updateHUD();
   requestAnimationFrame(frame);
 }
