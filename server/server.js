@@ -42,7 +42,8 @@ wss.on('connection', (ws) => {
     if (m.t === 'hello') {
       c.name = ('' + (m.name || 'P' + id)).slice(0, 16);
       c.livery = m.livery | 0;
-      const room = 't' + (m.track | 0);
+      // private room code -> its own room; otherwise a public room per circuit
+      const room = m.room ? ('r:' + String(m.room).toUpperCase().slice(0, 8)) : ('t' + (m.track | 0));
       if (c.room !== room) {
         if (c.room) for (const w of peers(c.room, ws)) send(w, { t: 'bye', id });
         c.room = room;
