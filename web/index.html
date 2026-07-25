@@ -171,6 +171,8 @@
 <script src="pp/MaskPass.js"></script>
 <script src="pp/RenderPass.js"></script>
 <script src="pp/UnrealBloomPass.js"></script>
+<script src="pp/SimplexNoise.js"></script>
+<script src="pp/SSAOPass.js"></script>
 <script src="GLTFLoader.js"></script>
 <script src="carmodel.js"></script>
 <!-- ▼ MULTIPLAYER: paste your Render server URL between the quotes to enable online
@@ -535,26 +537,27 @@ scene.background=new THREE.Color(0x9dc4f2);
 scene.fog=new THREE.Fog(0x9dc4f2,1200,5200);   // pushed far out so the whole circuit stays visible
 const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,0.2,5000);
 camera.position.set(0,60,120);
-// environment reflections (skip if no GL, e.g. headless)
-try{
-  const ec=document.createElement('canvas');ec.width=256;ec.height=128;const ex=ec.getContext('2d');
-  const g=ex.createLinearGradient(0,0,0,128);g.addColorStop(0,'#8fbcff');g.addColorStop(0.48,'#dfeeff');g.addColorStop(0.52,'#61724f');g.addColorStop(1,'#2c3a26');
-  ex.fillStyle=g;ex.fillRect(0,0,256,128);
-  const et=new THREE.CanvasTexture(ec);et.mapping=THREE.EquirectangularReflectionMapping;
-  const pm=new THREE.PMREMGenerator(renderer);scene.environment=pm.fromEquirectangular(et).texture;
-}catch(e){}
-// sky dome
-scene.add(new THREE.Mesh(new THREE.SphereGeometry(2600,32,16),new THREE.ShaderMaterial({side:THREE.BackSide,
+// sky dome (stored so the environment map can be generated from it)
+const sky=new THREE.Mesh(new THREE.SphereGeometry(2600,32,16),new THREE.ShaderMaterial({side:THREE.BackSide,
   uniforms:{top:{value:new THREE.Color(0x2f6fd6)},bot:{value:new THREE.Color(0xdcefff)}},
   vertexShader:'varying vec3 vP;void main(){vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
-  fragmentShader:'varying vec3 vP;uniform vec3 top;uniform vec3 bot;void main(){float h=clamp(normalize(vP).y*0.6+0.4,0.0,1.0);gl_FragColor=vec4(mix(bot,top,h),1.0);}'})));
+  fragmentShader:'varying vec3 vP;uniform vec3 top;uniform vec3 bot;void main(){float h=clamp(normalize(vP).y*0.6+0.4,0.0,1.0);gl_FragColor=vec4(mix(bot,top,h),1.0);}'}));
+scene.add(sky);
+// realistic reflections: build the environment straight from the sky (skip if no GL / headless)
+try{
+  const envScene=new THREE.Scene();
+  envScene.add(new THREE.Mesh(sky.geometry, sky.material));
+  envScene.add(new THREE.HemisphereLight(0xbcd6ff,0x40603a,1.0));
+  const pm=new THREE.PMREMGenerator(renderer);
+  scene.environment=pm.fromScene(envScene,0,1,4000).texture;
+}catch(e){}
 // lights
-scene.add(new THREE.HemisphereLight(0xbcd6ff,0x40603a,0.42));
-scene.add(new THREE.AmbientLight(0x33405a,0.25));
-const sun=new THREE.DirectionalLight(0xfff2dc,2.8); sun.castShadow=true;
-sun.shadow.mapSize.set(2048,2048); sun.shadow.camera.near=1; sun.shadow.camera.far=240;
-sun.shadow.camera.left=-42; sun.shadow.camera.right=42; sun.shadow.camera.top=42; sun.shadow.camera.bottom=-42;
-sun.shadow.bias=-0.0003; sun.shadow.normalBias=0.03; scene.add(sun); scene.add(sun.target);
+scene.add(new THREE.HemisphereLight(0xbcd6ff,0x40603a,0.40));
+scene.add(new THREE.AmbientLight(0x33405a,0.22));
+const sun=new THREE.DirectionalLight(0xffe9c8,3.0); sun.castShadow=true;   // warm key light
+sun.shadow.mapSize.set(4096,4096); sun.shadow.camera.near=1; sun.shadow.camera.far=240;
+sun.shadow.camera.left=-38; sun.shadow.camera.right=38; sun.shadow.camera.top=38; sun.shadow.camera.bottom=-38;
+sun.shadow.bias=-0.0002; sun.shadow.normalBias=0.028; scene.add(sun); scene.add(sun.target);
 // ground (grass with subtle mown-stripe texture)
 const grassCv=document.createElement('canvas');grassCv.width=grassCv.height=64;const grx=grassCv.getContext('2d');
 for(let y=0;y<64;y++)for(let x=0;x<64;x++){const b=((x>>3)+(y>>3))&1;const n=(Math.sin(x*12.9+y*4.7)*43758.5)%1;grx.fillStyle='rgb('+(40+b*8+n*6|0)+','+(96+b*12+n*10|0)+','+(38+b*6|0)+')';grx.fillRect(x,y,1,1);}
@@ -896,8 +899,14 @@ let composer=null, fxaaPass=null, bloomPass=null;
 try{
   if(THREE.EffectComposer && THREE.RenderPass && THREE.UnrealBloomPass && THREE.ShaderPass && THREE.FXAAShader && THREE.GammaCorrectionShader){
     composer=new THREE.EffectComposer(renderer);
-    composer.addPass(new THREE.RenderPass(scene,camera));
-    bloomPass=new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.32,0.55,0.85); // strength,radius,threshold
+    if(THREE.SSAOPass){   // ambient occlusion (contact shadows) — renders the scene too
+      const ssao=new THREE.SSAOPass(scene,camera,innerWidth,innerHeight);
+      ssao.kernelRadius=12; ssao.minDistance=0.003; ssao.maxDistance=0.08;
+      composer.addPass(ssao);
+    } else {
+      composer.addPass(new THREE.RenderPass(scene,camera));
+    }
+    bloomPass=new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.30,0.5,0.85); // strength,radius,threshold
     composer.addPass(bloomPass);
     fxaaPass=new THREE.ShaderPass(THREE.FXAAShader);
     composer.addPass(fxaaPass);
