@@ -1,0 +1,10 @@
+# Render Blueprint — deploys the multiplayer server from the /server folder.
+services:
+  - type: web
+    name: apexgp-server
+    runtime: node
+    rootDir: server
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /health
