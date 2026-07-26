@@ -151,6 +151,56 @@
   /* the online page carries the lobby browser too, so give the circuit list less room */
   #pgSetup.tight .mapgrid{max-height:15vh}
   #pgSetup.tight .lobbylist{max-height:132px}
+  /* ---- device picker ---- */
+  .devBtn{display:flex;align-items:center;gap:14px;width:100%;margin-top:10px;padding:15px 18px;cursor:pointer;
+    border:1px solid var(--line);border-radius:14px;background:#0c1220;color:var(--txt);font:inherit;text-align:left}
+  .devBtn:hover{border-color:#3d4c6b;background:#111a2c}
+  .devBtn.sel{border-color:var(--red);background:#1a1016;box-shadow:0 0 0 1px var(--red) inset}
+  .devBtn .ico{flex:0 0 40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:24px;
+    border-radius:10px;background:#16203a}
+  .devBtn.sel .ico{background:var(--red)}
+  .devBtn .dn{display:block;font-size:16px;font-weight:800}
+  .devBtn .dd{display:block;font-size:11px;color:var(--dim);margin-top:3px;letter-spacing:.04em}
+  .devBtn .dstat{margin-left:auto;flex:0 0 auto;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+    border:1px solid var(--line);border-radius:20px;padding:2px 9px;color:var(--dim)}
+  .devBtn .dstat.on{color:#37d07a;border-color:#37d07a66}
+  /* ---- on-screen (touch) controls ---- */
+  #touch{position:absolute;inset:0;z-index:8;display:none;touch-action:none;-webkit-user-select:none;user-select:none}
+  body.touching #touch{display:block}
+  #tSteer{position:absolute;left:12px;right:190px;bottom:14px;height:104px;border-radius:16px;
+    background:rgba(12,16,26,.5);border:1px solid var(--line);backdrop-filter:blur(6px);overflow:hidden}
+  #tSteer .tlab{position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:center;
+    padding-top:7px;font-size:10px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase;pointer-events:none}
+  #tKnob{position:absolute;top:50%;left:50%;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#fff,#c8d2e4);border:2px solid var(--red);pointer-events:none;
+    box-shadow:0 6px 18px #000a}
+  #tSteer .tmid{position:absolute;left:50%;top:10px;bottom:10px;width:2px;margin-left:-1px;background:#ffffff18;pointer-events:none}
+  .tbtn{position:absolute;border-radius:16px;border:1px solid var(--line);background:rgba(12,16,26,.5);
+    backdrop-filter:blur(6px);color:#fff;font:inherit;font-weight:900;letter-spacing:.06em;
+    display:flex;align-items:center;justify-content:center;font-size:13px}
+  .tbtn.hit{background:rgba(225,16,32,.75);border-color:var(--red)}
+  #tGas{right:12px;bottom:14px;width:82px;height:104px;font-size:26px}
+  #tBrake{right:100px;bottom:14px;width:78px;height:104px}
+  #tHand{right:100px;bottom:126px;width:78px;height:44px;font-size:11px}
+  #tDrs{right:12px;bottom:126px;width:82px;height:44px;font-size:11px}
+  body.touching #hint{display:none}
+  /* the controls own the bottom of the screen, so lift the HUD clear of them */
+  body.touching #speed{bottom:130px;min-width:148px;padding:8px 11px}
+  body.touching #speedNum{font-size:30px}
+  body.touching #speed .meters{display:none}          /* DRS/tyre live on the buttons instead */
+  body.touching #mini{width:104px;height:104px;bottom:auto;top:122px}
+  body.touching.split #tSteer{bottom:8px;height:76px} body.touching.split .tbtn{height:76px}
+  body.touching.split #tHand,body.touching.split #tDrs{bottom:92px;height:38px}
+  /* narrow screens: the menu and the circuit store have to fit a phone */
+  @media (max-width:560px){
+    .panel{padding:18px 16px 20px;border-radius:16px}
+    .title{font-size:38px} .sub{font-size:11px;margin:5px 0 12px}
+    .mapgrid{grid-template-columns:repeat(2,1fr);max-height:30vh}
+    #pgSetup.tight .mapgrid{max-height:22vh}
+    .modeBtn{padding:16px;font-size:18px}
+    .keys{display:none}
+    .seats{flex-direction:column}
+  }
   /* ---- bots slider ---- */
   .botrow{margin-top:14px;border:1px solid var(--line);border-radius:12px;padding:11px 14px;background:#0c1220}
   .botrow .btop{display:flex;align-items:baseline;gap:8px}
@@ -218,13 +268,35 @@
       <span class="mt">LAP <b id="s2lap">1/3</b></span><span class="mt">POS <b id="s2pos">1</b></span></div>
   </div>
   <div id="splitLine"></div>
+  <!-- on-screen controls: shown only when you pick PHONE -->
+  <div id="touch">
+    <div id="tSteer"><div class="tmid"></div><div class="tlab">slide to steer</div><div id="tKnob"></div></div>
+    <button class="tbtn" id="tBrake">BRAKE</button>
+    <button class="tbtn" id="tGas">▲</button>
+    <button class="tbtn" id="tHand">HAND</button>
+    <button class="tbtn" id="tDrs">DRS</button>
+  </div>
   <div id="menu" class="overlay">
     <div class="panel">
       <div class="title"><span class="g">APEX</span> GP <span style="font-size:22px;color:var(--blue)">3D</span></div>
       <div class="sub" id="menuSub">23 CIRCUITS · 400 MPH · UP TO 23 CARS</div>
 
+      <!-- ===== page: pick what you're playing on ===== -->
+      <div id="pgDevice">
+        <button class="devBtn" id="devPhone"><span class="ico">📱</span>
+          <span><span class="dn">PHONE / TABLET</span><span class="dd">On-screen wheel and pedals</span></span>
+          <span class="dstat" id="devPhoneStat">touch</span></button>
+        <button class="devBtn sel" id="devKeys"><span class="ico">⌨️</span>
+          <span><span class="dn">LAPTOP / PC</span><span class="dd">Keyboard — W A S D or the arrows</span></span>
+          <span class="dstat on">ready</span></button>
+        <button class="devBtn" id="devPad"><span class="ico">🎮</span>
+          <span><span class="dn">CONTROLLER</span><span class="dd" id="devPadName">PS4, Xbox or any gamepad</span></span>
+          <span class="dstat" id="devPadStat">none</span></button>
+        <button class="modeBtn alt" id="devNext" style="margin-top:14px">CONTINUE ▸</button>
+      </div>
+
       <!-- ===== page: pick how you race ===== -->
-      <div id="pgRoot">
+      <div id="pgRoot" class="hide">
         <button class="modeBtn" id="btnMulti">MULTIPLAYER<small>ONLINE OR TWO PLAYERS ON THIS SCREEN</small></button>
         <button class="modeBtn alt" id="btnOffline">OFFLINE<small>YOU AGAINST UP TO 22 BOTS</small></button>
       </div>
@@ -235,6 +307,7 @@
         <button class="modeBtn alt" id="btnLocal">LOCAL PLAY<small>TWO PLAYERS, SPLIT SCREEN, PLUS BOTS</small></button>
         <button class="backBtn" id="multiBack">◂ Back</button>
       </div>
+      <button class="backBtn hide" id="rootBack">◂ Change device</button>
 
       <!-- ===== page: race setup (shared by all three modes) ===== -->
       <div id="pgSetup" class="hide">
@@ -250,7 +323,7 @@
 
       <!-- two seats, local play only -->
       <div class="seats hide" id="seatBox">
-        <div class="seat on" id="seat1"><div class="snum">Player 1</div><div class="sname">Ready</div>
+        <div class="seat on" id="seat1"><div class="snum">Player 1</div><div class="sname" id="seat1name">Ready</div>
           <div class="skeys">W A S D · Space · Shift</div></div>
         <div class="seat" id="seat2"><div class="snum">Player 2</div><div class="sname" id="seat2name">Press ↑ to join</div>
           <div class="skeys">↑ ← ↓ → · Enter · Ctrl</div></div>
@@ -475,6 +548,70 @@ const K1={up:['w'],down:['s'],left:['a'],right:['d'],hand:[' '],boost:['shift']}
 const K2={up:['arrowup'],down:['arrowdown'],left:['arrowleft'],right:['arrowright'],hand:['enter'],boost:['control']};
 const isDown=l=>l.some(k=>keys[k]);
 function padFor(car){return splitOn()?(car.seat?K2:K1):K;}
+
+/* ---- devices: keyboard, on-screen touch, or a gamepad ------------------- */
+// 'keys' | 'touch' | 'pad'. Seat 0 uses what you picked; seat 1 takes a second
+// gamepad if one is plugged in, otherwise the arrow keys.
+let device=lsGet('apexgp_device')||'keys';
+let devicePicked=!!lsGet('apexgp_device');   // an explicit choice outranks auto-detection
+const touchIn={steer:0,thr:false,brk:false,hand:false,boost:false};
+function padsList(){ try{ return [...(navigator.getGamepads?navigator.getGamepads():[])].filter(Boolean); }catch(e){ return []; } }
+function padCount(){ return padsList().length; }
+function deviceFor(car){
+  if(!car.seat) return device;                       // seat 0: your choice
+  return padCount()>(device==='pad'?1:0) ? 'pad' : 'keys';   // seat 2: spare pad, else keys
+}
+function padIndexFor(car){
+  if(!car.seat) return 0;
+  return device==='pad'?1:0;                         // seat 2 gets the next pad along
+}
+const DEAD=0.14, dz=v=>Math.abs(v)<DEAD?0:(v-Math.sign(v)*DEAD)/(1-DEAD);
+// PS4/Xbox via the browser's standard mapping: L stick X steers, R2/L2 are the pedals
+function readPad(i){
+  const g=padsList()[i]; if(!g) return null;
+  const ax=g.axes||[], bt=g.buttons||[];
+  const held=n=>!!(bt[n]&&(bt[n].pressed||bt[n].value>0.5));
+  const trig=n=>bt[n]?(bt[n].value!=null?bt[n].value:(bt[n].pressed?1:0)):0;
+  let steer=dz(ax[0]||0);
+  if(!steer){ if(held(14))steer=-1; else if(held(15))steer=1; }        // d-pad fallback
+  // some drivers report the triggers as axes rather than buttons
+  let thr=trig(7), brk=trig(6);
+  if(thr<0.05&&ax.length>5) thr=Math.max(0,((ax[5]!=null?ax[5]:-1)+1)/2);
+  if(brk<0.05&&ax.length>4) brk=Math.max(0,((ax[4]!=null?ax[4]:-1)+1)/2);
+  return {steer, thr:thr>0.12||held(0), brk:brk>0.12||held(2), hand:held(1)||held(5), boost:held(3)||held(4)};
+}
+// what this car's driver is asking for this frame
+function readInput(car){
+  const dev=deviceFor(car), K=padFor(car);
+  let steer=0,thr=false,brk=false,hand=false,boost=false;
+  if(dev==='pad'){
+    const p=readPad(padIndexFor(car));
+    if(p){ steer=p.steer; thr=p.thr; brk=p.brk; hand=p.hand; boost=p.boost; }
+  }else if(dev==='touch'&&!car.seat){
+    steer=touchIn.steer; thr=touchIn.thr; brk=touchIn.brk; hand=touchIn.hand; boost=touchIn.boost;
+  }
+  // the keyboard always works too, whatever you picked — harmless, and saves you
+  // if a controller drops out mid-race
+  if(isDown(K.left))steer-=1; if(isDown(K.right))steer+=1;
+  return {steer:clamp(steer,-1,1), thr:thr||isDown(K.up), brk:brk||isDown(K.down),
+          hand:hand||isDown(K.hand), boost:boost||isDown(K.boost)};
+}
+function setDevice(d,explicit){
+  device=d; lsSet('apexgp_device',d); if(explicit)devicePicked=true;
+  for(const [id,val] of [['devPhone','touch'],['devKeys','keys'],['devPad','pad']]){
+    const b=el(id); if(b)b.classList.toggle('sel',device===val);
+  }
+  document.body.classList.toggle('touching',device==='touch'&&state!=='menu');
+  syncSetup();
+}
+function refreshPadStatus(){
+  const n=padCount(), st=el('devPadStat'), nm=el('devPadName');
+  if(st){ st.textContent=n?(n>1?n+' pads':'connected'):'none'; st.classList.toggle('on',n>0); }
+  if(nm&&n){ const g=padsList()[0]; nm.textContent=(g.id||'gamepad').replace(/\s*\([^)]*\)\s*/g,' ').trim().slice(0,42); }
+}
+// plugging a pad in preselects it, but never overrides a choice you made yourself
+addEventListener('gamepadconnected',()=>{refreshPadStatus();if(!devicePicked&&device!=='touch')setDevice('pad');});
+addEventListener('gamepaddisconnected',()=>{refreshPadStatus();if(device==='pad'&&!padCount())setDevice('keys');});
 const P2_JOIN=['arrowup','arrowdown','arrowleft','arrowright','enter'];
 addEventListener('keydown',e=>{const k=e.key.toLowerCase();keys[k]=true;
   if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();
@@ -485,6 +622,35 @@ addEventListener('keydown',e=>{const k=e.key.toLowerCase();keys[k]=true;
   if(k==='r'&&(state==='racing'||state==='paused'||state==='finished')&&!lobbyBlocked())startRace();
   ensureAudio();});
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
+
+/* ---- on-screen controls (phone) ---- */
+(function(){
+  const strip=el('tSteer'), knob=el('tKnob');
+  if(!strip)return;
+  let sid=null;
+  const place=x=>{
+    const r=strip.getBoundingClientRect(), half=r.width/2;
+    touchIn.steer=clamp((x-(r.left+half))/(half*0.82),-1,1);
+    if(knob)knob.style.left=(half+touchIn.steer*half*0.82)+'px';
+  };
+  const relax=()=>{ touchIn.steer=0; const r=strip.getBoundingClientRect();
+    if(knob)knob.style.left=(r.width/2)+'px'; };
+  strip.addEventListener('pointerdown',e=>{sid=e.pointerId;strip.setPointerCapture(e.pointerId);place(e.clientX);e.preventDefault();});
+  strip.addEventListener('pointermove',e=>{if(e.pointerId===sid)place(e.clientX);});
+  for(const ev of ['pointerup','pointercancel','lostpointercapture'])
+    strip.addEventListener(ev,e=>{if(e.pointerId===sid){sid=null;relax();}});
+  // pedals: pointer capture so a finger sliding off the button still releases it
+  const hold=(id,set)=>{ const b=el(id); if(!b)return;
+    const on=e=>{set(true);b.classList.add('hit');b.setPointerCapture&&b.setPointerCapture(e.pointerId);e.preventDefault();};
+    const off=()=>{set(false);b.classList.remove('hit');};
+    b.addEventListener('pointerdown',on);
+    for(const ev of ['pointerup','pointercancel','pointerleave','lostpointercapture'])b.addEventListener(ev,off);
+  };
+  hold('tGas',v=>touchIn.thr=v); hold('tBrake',v=>touchIn.brk=v);
+  hold('tHand',v=>touchIn.hand=v); hold('tDrs',v=>touchIn.boost=v);
+  // a real touch screen: offer the on-screen controls by default
+  try{ if(!lsGet('apexgp_device') && (matchMedia('(pointer:coarse)').matches||'ontouchstart' in window)) device='touch'; }catch(e){}
+})();
 
 /* ------------------------------- AUDIO ---------------------------------- */
 let AC=null,engOsc=null,engOsc2=null,engGain=null,screechGain=null,muted=false;
@@ -519,7 +685,7 @@ let state='menu',raceClock=0,cdT=0,msgT=0,finalLapAnnounced=false,camMode='chase
 // ---- how you're racing ----
 // 'offline' you + bots · 'online' you + humans over the network · 'local' 1-2 players
 // on this screen + bots. Only 'local' ever splits the screen.
-let mode='offline', menuPage='root', botCount=5, seats=1, player2=null;
+let mode='offline', menuPage='device', botCount=5, seats=1, player2=null;
 function humansHere(){return mode==='local'?seats:1;}
 function botsAllowed(){return mode==='online'?0:MAX_GRID-humansHere();}   // bots would desync online
 function botsNow(){return clamp(botCount|0,0,botsAllowed());}
@@ -528,6 +694,7 @@ function splitOn(){return mode==='local'&&seats>1;}
 function showPage(p){
   menuPage=p;
   const on=(id,yes)=>{const e=el(id);if(e)e.classList.toggle('hide',!yes);};
+  on('pgDevice',p==='device'); on('rootBack',p==='root');
   on('pgRoot',p==='root'); on('pgMulti',p==='mp');
   on('pgSetup',p==='offline'||p==='online'||p==='local');
   on('botRow',p==='offline'||p==='local');       // online bots would desync between clients
@@ -535,9 +702,9 @@ function showPage(p){
   on('onlineBox',p==='online');
   const setup=el('pgSetup'); if(setup)setup.classList.toggle('tight',p==='online');
   if(p==='offline'||p==='local'||p==='online')mode=p;
-  const sub={root:'23 CIRCUITS · 400 MPH · UP TO 23 CARS',mp:'ONLINE OR SPLIT SCREEN',
-    offline:'OFFLINE · YOU AND THE BOTS',online:'ONLINE · UP TO 22 PLAYERS',
-    local:'LOCAL PLAY · SPLIT SCREEN'}[p];
+  const sub={device:'WHAT ARE YOU PLAYING ON?',root:'23 CIRCUITS · 400 MPH · UP TO 23 CARS',
+    mp:'ONLINE OR SPLIT SCREEN',offline:'OFFLINE · YOU AND THE BOTS',
+    online:'ONLINE · UP TO 22 PLAYERS',local:'LOCAL PLAY · SPLIT SCREEN'}[p];
   if(el('menuSub')&&sub)el('menuSub').textContent=sub;
   if(mode==='online'){ if(el('mpEnable'))el('mpEnable').checked=true; if(!mpConnected)mpConnect(); }
   syncSetup(); renderLobbies();
@@ -551,7 +718,10 @@ function syncSetup(){
   if(n)n.textContent=botsNow();
   if(mx)mx.textContent='max '+botsAllowed()+' · '+fieldSize()+' cars';
   const s2=el('seat2'),s2n=el('seat2name');
-  if(s2){s2.classList.toggle('on',seats>1); if(s2n)s2n.textContent=seats>1?'Ready':'Press ↑ to join';}
+  if(s2){s2.classList.toggle('on',seats>1);
+    if(s2n)s2n.textContent=seats>1?(padCount()>(device==='pad'?1:0)?'Ready · gamepad':'Ready'):'Press ↑ to join';}
+  const s1n=el('seat1name');
+  if(s1n)s1n.textContent='Ready · '+({touch:'on-screen',pad:'gamepad',keys:'keyboard'}[device]||'keyboard');
   const pb=el('playBtn'); if(!pb)return;
   if(!modelReady){pb.textContent='LOADING CAR…';pb.disabled=true;return;}
   if(mode==='online'){
@@ -575,6 +745,7 @@ function startRace(){
   buildTrack(TRACKS[selTrack]); buildWorld();
   el('menu').classList.add('hide');el('results').classList.add('hide');el('hud').classList.remove('hide');
   document.body.classList.toggle('split',splitOn());
+  document.body.classList.toggle('touching',device==='touch');   // show the on-screen wheel
   const humans=humansHere(), bots=botsNow();
   cars=[];
   for(let i=0;i<humans;i++){const c=makeCar(LIVERIES[i],true);c.seat=i;cars.push(c);}
@@ -629,10 +800,18 @@ el('againBtn').onclick=()=>{ensureAudio();if(lobbyBlocked())return;startRace();}
 function backToMenu(){
   state='menu';player=null;player2=null;
   document.body.classList.remove('split');
+  document.body.classList.remove('touching');
+  touchIn.steer=0;touchIn.thr=touchIn.brk=touchIn.hand=touchIn.boost=false;
   el('results').classList.add('hide');el('hud').classList.add('hide');el('menu').classList.remove('hide');
   renderMapGrid();showMenuGrid();mpSend({t:'race',on:false});mpSend({t:'list'});renderLobbies();syncSetup();
 }
 el('menuBtn').onclick=backToMenu;
+/* ---- device page: phone / laptop / controller ---- */
+el('devPhone').onclick=()=>{ensureAudio();setDevice('touch',true);};
+el('devKeys').onclick=()=>{ensureAudio();setDevice('keys',true);};
+el('devPad').onclick=()=>{ensureAudio();refreshPadStatus();setDevice('pad',true);};
+el('devNext').onclick=()=>{ensureAudio();showPage('root');};
+el('rootBack').onclick=()=>showPage('device');
 /* ---- mode pages: MULTIPLAYER | OFFLINE, then ONLINE | LOCAL PLAY ---- */
 el('btnOffline').onclick=()=>{ensureAudio();seats=1;showPage('offline');showMenuGrid();};
 el('btnMulti').onclick=()=>{ensureAudio();showPage('mp');};
@@ -652,6 +831,7 @@ document.querySelectorAll('#seatBox .seat').forEach((s,i)=>{ if(i===1) s.onclick
   seats=seats>1?1:2; syncSetup(); showMenuGrid();      // click the seat as well as pressing a key
 };});
 (function(){const b=lsGet('apexgp_best');el('menuBest').textContent=b?fmtTime(+b):'—';})();
+setDevice(device); refreshPadStatus();          // reflect the remembered / detected device
 
 /* ------------------------------- SIM ------------------------------------ */
 function offTrack(car){
@@ -800,13 +980,13 @@ function update(dt){
   // every seated human drives their own car off their own keys
   for(const c of cars){
     if(!c.isPlayer)continue;
-    const P=padFor(c);
-    const wantBoost=isDown(P.boost)&&c.boost>0.03&&!c.off;
+    const inp=readInput(c);                       // keyboard, touch or gamepad
+    const wantBoost=inp.boost&&c.boost>0.03&&!c.off;
     c.boostOn=wantBoost;
     c.boost=clamp(c.boost+(wantBoost?-0.40:0.11)*dt,0,1);
     c.tyre=Math.max(0.87, c.tyre-(0.004+(c.off?0.018:0)+c.slip*0.03)*dt);
-    let s=0;if(isDown(P.left))s-=1;if(isDown(P.right))s+=1;
-    driveCar(c,isDown(P.up),isDown(P.down),s,isDown(P.hand),dt);
+    c.handOn=inp.hand;                            // effects read this rather than the keyboard
+    driveCar(c,inp.thr,inp.brk,inp.steer,inp.hand,dt);
   }
   engineSound(player.spd);
   for(const c of cars)if(!c.isPlayer)aiControl(c,dt);   // keep finished cars driving (cool-down), don't freeze
@@ -1111,7 +1291,7 @@ function emitEffects(dt){
   effTick++;
   for(const c of cars){
     if(c.finished)continue;
-    const slip = c.off || c.slip>0.12 || Math.abs(c.beta||0)>0.10 || (c.isPlayer&&isDown(K.hand)) || (c.brake&&c.spd>18);
+    const slip = c.off || c.slip>0.12 || Math.abs(c.beta||0)>0.10 || (c.isPlayer&&c.handOn) || (c.brake&&c.spd>18);
     if(!slip)continue;
     // rear axle contact points in world (sim x,y = world x,z)
     const fx=Math.cos(c.a),fy=Math.sin(c.a),rx=Math.sin(c.a),ry=-Math.cos(c.a);
@@ -1457,7 +1637,7 @@ function resize(){
     if(fxaaPass){const pr=renderer.getPixelRatio();fxaaPass.material.uniforms['resolution'].value.set(1/(innerWidth*pr),1/(innerHeight*pr));} }
 }
 addEventListener('resize',resize);resize();
-let last=performance.now();
+let last=performance.now(), padPoll=0;
 function frame(now){
   let dt=(now-last)/1000;last=now;dt=Math.min(dt,0.033);
   if(state==='racing'||state==='countdown')update(dt);
@@ -1466,6 +1646,8 @@ function frame(now){
     for(const w of ud.wheels){w.spin.rotation.z=-ud.dist/w.r;if(w.front)w.grp.rotation.y=-(c.steerAng||0);}}
   if(state==='racing'){emitEffects(dt);}
   mpTick(dt); updateAudio();
+  // gamepadconnected doesn't always fire until a button is pressed, so keep looking
+  if(state==='menu'&&menuPage==='device'){padPoll+=dt;if(padPoll>0.5){padPoll=0;refreshPadStatus();}}
   for(const m of coinGroup.children) m.rotation.y+=dt*3;   // spin coins
   updateSmoke(dt); updateSun();
   if(splitOn()&&player&&player2&&state!=='menu'){
