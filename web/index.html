@@ -89,15 +89,97 @@
   .mpline{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer}
   .mpstat{margin-left:auto;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);border:1px solid var(--line);border-radius:20px;padding:2px 10px}
   .mpstat.on{color:#37d07a;border-color:#37d07a}
-  .mpfields{display:none;gap:8px;margin-top:10px}
+  .mpfields{display:none;gap:8px;margin-top:10px;flex-wrap:wrap}
   .mpfields.show{display:flex}
+  .createBtn{flex:1 0 100%;background:linear-gradient(90deg,#1c46e0,#12b6ff);border:0;border-radius:8px;
+    color:#fff;font:inherit;font-weight:900;font-size:13px;letter-spacing:.08em;padding:11px;cursor:pointer}
+  .createBtn:hover{filter:brightness(1.1)}
   .mpfields input{flex:1;min-width:0;background:#0a0e18;border:1px solid var(--line);border-radius:8px;color:var(--txt);padding:9px 10px;font:inherit;font-size:13px}
   #mpName{flex:0 0 34%}
   #mpRoom{flex:1;text-transform:uppercase;letter-spacing:.15em;font-weight:700}
   .miniBtn{flex:0 0 auto;background:#1c46e0;border:0;border-radius:8px;color:#fff;font:inherit;font-weight:700;font-size:13px;padding:9px 14px;cursor:pointer}
   .miniBtn:hover{filter:brightness(1.1)}
+  .miniBtn.ghost{background:#16203a;border:1px solid var(--line)}
+  .miniBtn:disabled{filter:grayscale(.7) brightness(.65);cursor:default}
   .mphint{font-size:11px;color:var(--dim);margin-top:8px;line-height:1.4}
+  /* ---- lobby browser ---- */
+  .lobbywrap{display:none;margin-top:10px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#080c15}
+  .lobbywrap.show{display:block}
+  .lobbyhead{display:flex;align-items:center;gap:8px;padding:7px 11px;background:#111a2c;
+    font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+  .lobbyhead b{color:var(--txt)}
+  .lobbyhead .spin{margin-left:auto;font-size:11px}
+  .lobbylist{max-height:176px;overflow-y:auto}
+  .lrow{display:flex;align-items:center;gap:10px;padding:8px 11px;border-top:1px solid #151d2e;cursor:pointer}
+  .lrow:hover{background:#111a2c}
+  .lrow.mine{background:#16203a}
+  .lcode{flex:0 0 44px;font-weight:900;letter-spacing:.1em;color:var(--yellow);font-size:14px}
+  .lcode.pub{color:var(--blue);font-size:10px;letter-spacing:.08em}
+  .lmid{flex:1;min-width:0}
+  .ltrk{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lsub{font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lpl{flex:0 0 auto;font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
+  .lbadge{flex:0 0 auto;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+    border:1px solid var(--line);border-radius:20px;padding:2px 8px;color:var(--dim)}
+  .lbadge.open{color:#37d07a;border-color:#37d07a55}
+  .lbadge.racing{color:var(--yellow);border-color:#f7d51d55}
+  .lbadge.full{color:var(--red);border-color:#e1102077}
+  .lrow.locked .ltrk{color:var(--dim)}
+  .lrow.cant{animation:nope .34s}
+  @keyframes nope{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+  .lempty{padding:15px 12px;text-align:center;color:var(--dim);font-size:12px;line-height:1.5}
+  .lmine{display:none;margin-top:10px;border:1px solid #2a5cff66;background:#0d1730;border-radius:10px;padding:11px 13px}
+  .lmine.show{display:block}
+  .lmine .lmtop{display:flex;align-items:center;gap:10px}
+  .lmine .lmcode{font-size:24px;font-weight:900;letter-spacing:.22em;color:var(--yellow)}
+  .lmine .lmwho{font-size:12px;color:var(--dim);margin-top:5px;line-height:1.45}
+  .lmine .lmwarn{margin-top:7px;font-size:12px;color:var(--yellow)}
   #tag{position:absolute;pointer-events:none}
+  /* ---- mode pages ---- */
+  .modeBtn{display:block;width:100%;margin-top:12px;padding:20px;border:0;border-radius:14px;cursor:pointer;
+    font-size:22px;font-weight:900;letter-spacing:.07em;color:#fff;animation:none;
+    background:linear-gradient(90deg,var(--red),#ff5a2a);box-shadow:0 10px 30px #e1102055}
+  .modeBtn.alt{background:linear-gradient(90deg,#1c46e0,#12b6ff);box-shadow:0 10px 30px #1c46e055}
+  .modeBtn:hover{filter:brightness(1.1)}
+  .modeBtn small{display:block;font-size:12px;font-weight:600;letter-spacing:.1em;opacity:.85;margin-top:5px}
+  .backBtn{display:block;width:100%;margin-top:10px;padding:11px;border:1px solid var(--line);border-radius:10px;
+    background:#111a2c;color:var(--dim);font:inherit;font-weight:700;font-size:13px;cursor:pointer}
+  .backBtn:hover{color:var(--txt)}
+  /* ---- bots slider ---- */
+  .botrow{margin-top:14px;border:1px solid var(--line);border-radius:12px;padding:11px 14px;background:#0c1220}
+  .botrow .btop{display:flex;align-items:baseline;gap:8px}
+  .botrow .bnum{font-size:26px;font-weight:900;color:var(--yellow);line-height:1}
+  .botrow .bmax{color:var(--dim);font-size:12px;margin-left:auto}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:26px;background:transparent;margin-top:4px}
+  input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:6px;
+    background:linear-gradient(90deg,var(--blue),var(--yellow),var(--red))}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;
+    background:#fff;border:2px solid var(--red);margin-top:-6px;cursor:pointer;box-shadow:0 2px 8px #000a}
+  input[type=range]::-moz-range-track{height:8px;border-radius:6px;background:#2a3448}
+  input[type=range]::-moz-range-thumb{width:18px;height:18px;border:2px solid var(--red);border-radius:50%;background:#fff;cursor:pointer}
+  /* ---- local play seats ---- */
+  .seats{display:flex;gap:10px;margin-top:12px}
+  .seat{flex:1;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#0c1220}
+  .seat.on{border-color:#37d07a;background:#0d1a14}
+  .seat .snum{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+  .seat .sname{font-size:15px;font-weight:800;margin-top:3px}
+  .seat .skeys{font-size:11px;color:var(--dim);margin-top:4px}
+  .seat.on .sname{color:#37d07a}
+  /* ---- split-screen HUD ---- */
+  #splitLine{position:absolute;left:0;right:0;top:50%;height:2px;background:#000c;
+    box-shadow:0 0 0 1px #ffffff22;z-index:6;pointer-events:none;display:none}
+  body.split #splitLine{display:block}
+  body.split #hudTL,body.split #hudTR,body.split #speed,body.split #mini,body.split #hint,body.split #cash{display:none}
+  .pstrip{position:absolute;left:12px;display:none;gap:14px;align-items:center;z-index:7;
+    background:rgba(12,16,26,.66);border:1px solid var(--line);border-radius:10px;padding:7px 12px;
+    font-variant-numeric:tabular-nums;backdrop-filter:blur(6px)}
+  body.split .pstrip{display:flex}
+  #strip1{top:12px} #strip2{top:calc(50% + 12px)}
+  .pstrip .who{font-weight:900;font-size:12px;letter-spacing:.1em;color:var(--yellow)}
+  .pstrip .sp{font-size:22px;font-weight:900;line-height:1}
+  .pstrip .sp small{font-size:11px;color:var(--dim);margin-left:3px}
+  .pstrip .mt{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+  .pstrip .mt b{color:var(--txt)}
 </style>
 </head>
 <body>
@@ -121,11 +203,35 @@
     <div id="hint">C camera · M mute · P pause · R restart</div>
     <div id="msg"></div>
     <div id="lights"><div class="lt"></div><div class="lt"></div><div class="lt"></div><div class="lt"></div><div class="lt"></div></div>
+    <!-- split-screen: one compact readout per half, plus the divider -->
+    <div id="strip1" class="pstrip"><span class="who">P1</span>
+      <span class="sp" id="s1spd">0<small>MPH</small></span>
+      <span class="mt">LAP <b id="s1lap">1/3</b></span><span class="mt">POS <b id="s1pos">1</b></span></div>
+    <div id="strip2" class="pstrip"><span class="who" style="color:var(--blue)">P2</span>
+      <span class="sp" id="s2spd">0<small>MPH</small></span>
+      <span class="mt">LAP <b id="s2lap">1/3</b></span><span class="mt">POS <b id="s2pos">1</b></span></div>
   </div>
+  <div id="splitLine"></div>
   <div id="menu" class="overlay">
     <div class="panel">
       <div class="title"><span class="g">APEX</span> GP <span style="font-size:22px;color:var(--blue)">3D</span></div>
-      <div class="sub">23 CIRCUITS · 400 MPH · ONLINE MULTIPLAYER</div>
+      <div class="sub" id="menuSub">23 CIRCUITS · 400 MPH · UP TO 23 CARS</div>
+
+      <!-- ===== page: pick how you race ===== -->
+      <div id="pgRoot">
+        <button class="modeBtn" id="btnMulti">MULTIPLAYER<small>ONLINE OR TWO PLAYERS ON THIS SCREEN</small></button>
+        <button class="modeBtn alt" id="btnOffline">OFFLINE<small>YOU AGAINST UP TO 22 BOTS</small></button>
+      </div>
+
+      <!-- ===== page: which kind of multiplayer ===== -->
+      <div id="pgMulti" class="hide">
+        <button class="modeBtn" id="btnOnline">ONLINE<small>RACE UP TO 22 PLAYERS OVER THE INTERNET</small></button>
+        <button class="modeBtn alt" id="btnLocal">LOCAL PLAY<small>TWO PLAYERS, SPLIT SCREEN, PLUS BOTS</small></button>
+        <button class="backBtn" id="multiBack">◂ Back</button>
+      </div>
+
+      <!-- ===== page: race setup (shared by all three modes) ===== -->
+      <div id="pgSetup" class="hide">
       <div class="lbl" style="display:flex;justify-content:space-between;align-items:center">
         <span>Circuit — tap to select or buy</span><span id="money" class="cash">$0</span></div>
       <div id="mapGrid" class="mapgrid"></div>
@@ -135,18 +241,52 @@
         <div class="opt"><div class="lbl">Difficulty</div><div class="seg" id="segDiff">
           <button data-v="0.9">Rookie</button><button data-v="1.0" class="sel">Pro</button><button data-v="1.08">Ace</button></div></div>
       </div>
-      <div class="mp">
+
+      <!-- two seats, local play only -->
+      <div class="seats hide" id="seatBox">
+        <div class="seat on" id="seat1"><div class="snum">Player 1</div><div class="sname">Ready</div>
+          <div class="skeys">W A S D · Space · Shift</div></div>
+        <div class="seat" id="seat2"><div class="snum">Player 2</div><div class="sname" id="seat2name">Press ↑ to join</div>
+          <div class="skeys">↑ ← ↓ → · Enter · Ctrl</div></div>
+      </div>
+
+      <!-- bots slider, offline + local only -->
+      <div class="botrow hide" id="botRow">
+        <div class="btop"><span class="bnum" id="botNum">5</span>
+          <span class="lbl" style="letter-spacing:.1em">BOTS ON THE GRID</span>
+          <span class="bmax" id="botMax">max 22</span></div>
+        <input type="range" id="botSlider" min="0" max="22" step="1" value="5">
+      </div>
+
+      <div class="mp hide" id="onlineBox">
         <label class="mpline"><input type="checkbox" id="mpEnable"> <b>Play online with friends</b>
           <span id="mpStatus" class="mpstat">offline</span></label>
         <div class="mpfields" id="mpFields">
           <input id="mpName" maxlength="16" placeholder="Your name" value="Racer">
-          <input id="mpRoom" maxlength="8" placeholder="Room code" autocomplete="off">
-          <button id="mpCreate" type="button" class="miniBtn">Create</button>
+          <input id="mpRoom" maxlength="8" placeholder="Code" autocomplete="off">
+          <button id="mpJoin" type="button" class="miniBtn ghost">Join</button>
+          <button id="mpCreate" type="button" class="createBtn">+ CREATE LOBBY</button>
         </div>
-        <div class="mphint" id="mpHint">Create a room and share the code — or type a friend's code to join. Same code &amp; same circuit races together. Leave blank for a public lobby.</div>
+        <div class="lobbywrap" id="lobbyWrap">
+          <div class="lobbyhead"><b>Open lobbies</b> <span id="lobbyCount"></span>
+            <span class="spin" id="lobbyRefresh" style="cursor:pointer" title="Refresh">↻</span></div>
+          <div class="lobbylist" id="lobbyList"></div>
+        </div>
+        <div class="lmine" id="lobbyMine">
+          <div class="lmtop"><span class="lmcode" id="lmCode">····</span>
+            <div style="flex:1;min-width:0"><div id="lmTrack" style="font-size:13px"></div>
+              <div class="lsub" id="lmMeta"></div></div>
+            <button id="mpLeave" type="button" class="miniBtn ghost">Leave</button></div>
+          <div class="lmwho" id="lmWho"></div>
+          <div class="lmwarn hide" id="lmWarn"></div>
+        </div>
+        <div class="mphint" id="mpHint">Pick a lobby from the list, or create your own and share the code — everyone in a lobby races the same circuit together. A lobby fills to 22; you can start as soon as two of you are in.</div>
         <input id="mpUrl" type="hidden">
       </div>
       <button class="play" id="playBtn" disabled>LOADING CAR…</button>
+      <button class="backBtn" id="setupBack">◂ Back</button>
+      </div><!-- /pgSetup -->
+
       <div class="keys"><span><b><kbd>W</kbd>/<kbd>↑</kbd></b> Throttle</span><span><b><kbd>S</kbd>/<kbd>↓</kbd></b> Brake</span>
         <span><b><kbd>A</kbd> <kbd>D</kbd></b> Steer</span><span><b><kbd>Shift</kbd></b> DRS boost</span><span><b><kbd>C</kbd></b> Cockpit/Chase</span><span><b><kbd>Space</kbd></b> Handbrake</span></div>
       <div class="foot">Best lap: <span id="menuBest">—</span></div>
@@ -221,7 +361,10 @@ function steerLimit(v,cap){
 }
 
 /* ------------------------------- TRACKS --------------------------------- */
-const TRACK_W=20, HALF=TRACK_W/2, BARRIER_OFF=2.0, CAR_HW=0.85;   // wider track
+// 26m of asphalt is the widest these circuits take: past 28m the barrier footprint
+// of four procedural maps self-intersects (see validate_maps.js).
+const TRACK_W=26, HALF=TRACK_W/2, BARRIER_OFF=2.0, CAR_HW=0.85;
+const MAX_BOTS=22, MAX_GRID=MAX_BOTS+1;   // you + up to 22 others on the grid
 const TRACKS=[
   {name:'Silverlake', N:320, wp:[[-450,-175],[-100,-190],[260,-182],[430,-155],[490,-80],[465,10],[370,40],
     [300,120],[380,190],[480,200],[470,285],[370,310],[250,280],[210,200],[140,255],[80,195],[10,235],
@@ -291,16 +434,24 @@ buildTrack(TRACKS[0]);
 function nearestNode(x,y,hint){const N=T.N;let best=hint||0,bd=1e18;for(let d=-6;d<=18;d++){const i=((hint+d)%N+N)%N,p=T.c[i];const dd=(p.x-x)*(p.x-x)+(p.y-y)*(p.y-y);if(dd<bd){bd=dd;best=i;}}return best;}
 
 /* ------------------------------- CARS ----------------------------------- */
+// 23 distinct liveries — one per grid slot, so a full field never repeats a colour
 const LIVERIES=[{name:'CARBON',tint:0xffffff},{name:'SCARLET',tint:0xff3030},{name:'AZZURRO',tint:0x3aa0ff},
-  {name:'VERDE',tint:0x37d07a},{name:'VIPER',tint:0xb060ff},{name:'INFERNO',tint:0xff8a2a}];
+  {name:'VERDE',tint:0x37d07a},{name:'VIPER',tint:0xb060ff},{name:'INFERNO',tint:0xff8a2a},
+  {name:'CYAN',tint:0x00e0ff},{name:'MAGENTA',tint:0xff5ac8},{name:'LIME',tint:0x9dff3c},
+  {name:'AMBER',tint:0xffb030},{name:'LILAC',tint:0xb9a0ff},{name:'MINT',tint:0x40ffb0},
+  {name:'ROSE',tint:0xff7090},{name:'COBALT',tint:0x2a5cff},{name:'SAND',tint:0xd8c48a},
+  {name:'TEAL',tint:0x1fb6a6},{name:'PLUM',tint:0x8a3fb0},{name:'RUST',tint:0xb5522a},
+  {name:'STEEL',tint:0x8fa4c0},{name:'GOLD',tint:0xf2c327},{name:'IVY',tint:0x2f8f4a},
+  {name:'CRIMSON',tint:0x9e1128},{name:'SLATE',tint:0x4a5568}];
 let cars=[],player=null,totalLaps=3,aiSkill=1.0;
 function makeCar(livery,isPlayer){return{livery,isPlayer,x:0,y:0,a:0,spd:0,vy:0,yr:0,beta:0,steer:0,steerAng:0,node:0,prevNode:0,
   lapsCrossed:-1,lapStart:0,lastLap:null,bestLap:null,finished:false,finishTime:null,progress:0,pos:1,
   laneOff:(Math.random()-0.5)*2,skill:1,off:false,rig:null,brake:false,slip:0,stuckT:0,boost:1,boostOn:false,tyre:1};}
 function gridPlace(){
   const N=T.N,t0=T.tan[0],n0=T.nrm[0],ang=Math.atan2(t0.y,t0.x);
-  cars.forEach((car,k)=>{const row=Math.floor(k/2),col=k%2?1:-1,back=8+row*9.5;
-    car.x=T.c[0].x-t0.x*back+n0.x*col*3.6; car.y=T.c[0].y-t0.y*back+n0.y*col*3.6;
+  cars.forEach((car,k)=>{const g=gridSlot(k),col=g.col,back=g.back;
+    car.x=T.c[0].x-t0.x*back+n0.x*col; car.y=T.c[0].y-t0.y*back+n0.y*col;
+    car.camInit=false; car.shake=0;
     car.a=ang; car.spd=0; car.steer=0; car.steerAng=0; car.vy=0; car.yr=0; car.beta=0; car.slip=0;
     car.node=nearestNode(car.x,car.y,N-3); car.prevNode=car.node;
     car.lapsCrossed=-1; car.lapStart=0; car.lastLap=null; car.bestLap=null; car.finished=false; car.finishTime=null; car.off=false; car.brake=false;
@@ -308,13 +459,21 @@ function gridPlace(){
 }
 
 /* ------------------------------- INPUT ---------------------------------- */
-const keys={},K={up:['arrowup','w'],down:['arrowdown','s'],left:['arrowleft','a'],right:['arrowright','d'],hand:[' '],boost:['shift']};
+const keys={};
+// one seat: either scheme drives your car. Two seats: P1 gets WASD, P2 the arrows.
+const K={up:['arrowup','w'],down:['arrowdown','s'],left:['arrowleft','a'],right:['arrowright','d'],hand:[' '],boost:['shift']};
+const K1={up:['w'],down:['s'],left:['a'],right:['d'],hand:[' '],boost:['shift']};
+const K2={up:['arrowup'],down:['arrowdown'],left:['arrowleft'],right:['arrowright'],hand:['enter'],boost:['control']};
 const isDown=l=>l.some(k=>keys[k]);
+function padFor(car){return splitOn()?(car.seat?K2:K1):K;}
+const P2_JOIN=['arrowup','arrowdown','arrowleft','arrowright','enter'];
 addEventListener('keydown',e=>{const k=e.key.toLowerCase();keys[k]=true;
   if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();
+  // player 2 "connects" by reaching for their controls on the local-play page
+  if(state==='menu'&&menuPage==='local'&&seats<2&&P2_JOIN.includes(k)){seats=2;syncSetup();showMenuGrid();beep(900,0.1,0.07);}
   if(k==='m')toggleMute(); if(k==='c')toggleCam();
   if((k==='p'||k==='escape')&&(state==='racing'||state==='paused'))togglePause();
-  if(k==='r'&&(state==='racing'||state==='paused'||state==='finished'))startRace();
+  if(k==='r'&&(state==='racing'||state==='paused'||state==='finished')&&!lobbyBlocked())startRace();
   ensureAudio();});
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
 
@@ -348,20 +507,77 @@ function toggleMute(){muted=!muted;if(engGain&&muted)engGain.gain.value=0;if(scr
 
 /* ------------------------------- STATE ---------------------------------- */
 let state='menu',raceClock=0,cdT=0,msgT=0,finalLapAnnounced=false,camMode='chase',modelReady=false,finishCount=0,raceCoins=0;
+// ---- how you're racing ----
+// 'offline' you + bots · 'online' you + humans over the network · 'local' 1-2 players
+// on this screen + bots. Only 'local' ever splits the screen.
+let mode='offline', menuPage='root', botCount=5, seats=1, player2=null;
+function humansHere(){return mode==='local'?seats:1;}
+function botsAllowed(){return mode==='online'?0:MAX_GRID-humansHere();}   // bots would desync online
+function botsNow(){return clamp(botCount|0,0,botsAllowed());}
+function fieldSize(){return clamp(humansHere()+botsNow(),1,MAX_GRID);}
+function splitOn(){return mode==='local'&&seats>1;}
+function showPage(p){
+  menuPage=p;
+  const on=(id,yes)=>{const e=el(id);if(e)e.classList.toggle('hide',!yes);};
+  on('pgRoot',p==='root'); on('pgMulti',p==='mp');
+  on('pgSetup',p==='offline'||p==='online'||p==='local');
+  on('botRow',p==='offline'||p==='local');       // online bots would desync between clients
+  on('seatBox',p==='local');
+  on('onlineBox',p==='online');
+  if(p==='offline'||p==='local'||p==='online')mode=p;
+  const sub={root:'23 CIRCUITS · 400 MPH · UP TO 23 CARS',mp:'ONLINE OR SPLIT SCREEN',
+    offline:'OFFLINE · YOU AND THE BOTS',online:'ONLINE · UP TO 22 PLAYERS',
+    local:'LOCAL PLAY · SPLIT SCREEN'}[p];
+  if(el('menuSub')&&sub)el('menuSub').textContent=sub;
+  if(mode==='online'){ if(el('mpEnable'))el('mpEnable').checked=true; if(!mpConnected)mpConnect(); }
+  syncSetup();
+}
+// keep the bots slider, seats and the start button honest about the current mode
+function syncSetup(){
+  const s=el('botSlider'),n=el('botNum'),mx=el('botMax');
+  const v=s?parseInt(s.value,10):NaN;                  // never let an unreadable slider NaN the field size
+  botCount=clamp(Number.isFinite(v)?v:(botCount|0),0,botsAllowed());
+  if(s){ s.max=String(botsAllowed()); s.value=String(botCount); }
+  if(n)n.textContent=botsNow();
+  if(mx)mx.textContent='max '+botsAllowed()+' · '+fieldSize()+' cars';
+  const s2=el('seat2'),s2n=el('seat2name');
+  if(s2){s2.classList.toggle('on',seats>1); if(s2n)s2n.textContent=seats>1?'Ready':'Press ↑ to join';}
+  const pb=el('playBtn'); if(!pb)return;
+  if(!modelReady){pb.textContent='LOADING CAR…';pb.disabled=true;return;}
+  if(mode==='online'){
+    const n2=myLobby?(myLobby.players|0):0;
+    pb.disabled=n2<2;
+    pb.textContent=!myLobby?'JOIN OR CREATE A LOBBY'
+      :n2<2?'WAITING FOR PLAYERS · '+n2+'/'+(myLobby.max|0)
+      :'START NOW · '+n2+'/'+(myLobby.max|0)+' ▸';
+  }else{ pb.disabled=false; pb.textContent='START RACE ▸'; }
+}
 function setMsg(t,s){el('msg').textContent=t;el('msg').classList.add('show');msgT=s||1.4;}
 function toggleCam(){camMode=camMode==='chase'?'cockpit':'chase';setMsg(camMode==='cockpit'?'COCKPIT':'CHASE',0.9);}
 function startRace(){
   if(!modelReady)return;
+  // in a lobby the LOBBY is authoritative: the store and the laps segment stay live
+  // in the menu, and everyone racing together must simulate the same track
+  if(mode==='online'&&myLobby&&validTrack(myLobby.track)&&owned.has(myLobby.track)){
+    selTrack=myLobby.track; totalLaps=clamp(myLobby.laps|0,1,50)||3;
+  }
   if(!owned.has(selTrack)) selTrack=0;                 // can only race a map you own
   buildTrack(TRACKS[selTrack]); buildWorld();
   el('menu').classList.add('hide');el('results').classList.add('hide');el('hud').classList.remove('hide');
-  cars=[makeCar(LIVERIES[0],true)];player=cars[0];
-  for(let i=1;i<6;i++){const c=makeCar(LIVERIES[i],false);c.skill=aiSkill*(0.965+Math.random()*0.06);cars.push(c);}
+  document.body.classList.toggle('split',splitOn());
+  const humans=humansHere(), bots=botsNow();
+  cars=[];
+  for(let i=0;i<humans;i++){const c=makeCar(LIVERIES[i],true);c.seat=i;cars.push(c);}
+  player=cars[0]; player2=humans>1?cars[1]:null;
+  for(let i=0;i<bots;i++){const c=makeCar(LIVERIES[(humans+i)%LIVERIES.length],false);
+    c.skill=aiSkill*(0.965+Math.random()*0.06);cars.push(c);}
+  ensureRigs(cars.length);
   cars.forEach((c,i)=>{c.rig=rigs[i];if(c.rig)c.rig.visible=true;});
-  gridPlace(); resetEffects(); camInit=false;
+  for(let i=cars.length;i<rigs.length;i++)rigs[i].visible=false;   // park the unused pool
+  gridPlace(); resetEffects();
   clearRemotes();
-  if(mpEnabled()){ if(ws&&mpConnected) mpHello(); else mpConnect(); }
-  else if(ws){ try{ws.close();}catch(e){} ws=null; mpConnected=false; mpStat('offline'); }
+  if(mode==='online'&&mpEnabled()){ if(ws&&mpConnected){ mpHello(); mpSend({t:'race',on:true}); } else mpConnect(); }
+  else if(ws&&mode!=='online'){ try{ws.close();}catch(e){} ws=null; mpConnected=false; mpStat('offline'); }
   el('lapTot').textContent=totalLaps;el('posTot').textContent=cars.length;
   raceClock=0;finalLapAnnounced=false;finishCount=0;raceCoins=0;state='countdown';cdT=0;
   el('lights').style.display='flex';document.querySelectorAll('.lt').forEach(l=>l.classList.remove('on'));
@@ -387,9 +603,44 @@ function renderMapGrid(){
 renderMapGrid();
 document.querySelectorAll('#segLaps button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#segLaps button').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');totalLaps=+b.dataset.v;});
 document.querySelectorAll('#segDiff button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#segDiff button').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');aiSkill=+b.dataset.v;});
-el('playBtn').onclick=()=>{ensureAudio();startRace();};
-el('againBtn').onclick=()=>{ensureAudio();startRace();};
-el('menuBtn').onclick=()=>{state='menu';player=null;el('results').classList.add('hide');el('hud').classList.add('hide');el('menu').classList.remove('hide');renderMapGrid();showMenuGrid();};
+// you can't race a lobby's circuit you don't own — everyone must simulate the same track
+function lobbyBlocked(){
+  if(!myLobby)return false;
+  if(!validTrack(myLobby.track)){
+    lobbyErr='This lobby is on a circuit this version doesn\'t have — leave it to race.';
+    renderLobbies(); return true;
+  }
+  if(owned.has(myLobby.track))return false;
+  lobbyErr='Buy '+trackName(myLobby.track)+' ($'+TRACKS[myLobby.track].price+') above to race in this lobby.';
+  renderLobbies(); return true;
+}
+el('playBtn').onclick=()=>{ensureAudio();if(lobbyBlocked())return;startRace();};
+el('againBtn').onclick=()=>{ensureAudio();if(lobbyBlocked())return;startRace();};
+function backToMenu(){
+  state='menu';player=null;player2=null;
+  document.body.classList.remove('split');
+  el('results').classList.add('hide');el('hud').classList.add('hide');el('menu').classList.remove('hide');
+  renderMapGrid();showMenuGrid();mpSend({t:'race',on:false});mpSend({t:'list'});renderLobbies();syncSetup();
+}
+el('menuBtn').onclick=backToMenu;
+/* ---- mode pages: MULTIPLAYER | OFFLINE, then ONLINE | LOCAL PLAY ---- */
+el('btnOffline').onclick=()=>{ensureAudio();seats=1;showPage('offline');showMenuGrid();};
+el('btnMulti').onclick=()=>{ensureAudio();showPage('mp');};
+el('btnOnline').onclick=()=>{ensureAudio();seats=1;showPage('online');showMenuGrid();};
+el('btnLocal').onclick=()=>{ensureAudio();showPage('local');showMenuGrid();};
+el('multiBack').onclick=()=>showPage('root');
+el('setupBack').onclick=()=>{
+  if(mode==='online'){                          // leaving online play hangs up properly
+    if(myLobby)leaveLobby();
+    if(el('mpEnable'))el('mpEnable').checked=false;
+    if(ws){try{ws.close();}catch(e){}} ws=null;mpConnected=false;lobbies=[];mpStat('offline');
+  }
+  showPage(mode==='offline'?'root':'mp');
+};
+el('botSlider').oninput=()=>{botCount=clamp(+el('botSlider').value,0,botsAllowed());syncSetup();showMenuGrid();};
+document.querySelectorAll('#seatBox .seat').forEach((s,i)=>{ if(i===1) s.onclick=()=>{
+  seats=seats>1?1:2; syncSetup(); showMenuGrid();      // click the seat as well as pressing a key
+};});
 (function(){const b=lsGet('apexgp_best');el('menuBest').textContent=b?fmtTime(+b):'—';})();
 
 /* ------------------------------- SIM ------------------------------------ */
@@ -421,7 +672,7 @@ function clampToWalls(car){
     car.x+=n.x*push; car.y+=n.y*push;          // snap fully back inside — no penetration
     // scrub the into-wall velocity so you scrape along, not bounce off (and stop any spin)
     car.spd*=0.55; car.vy*=0.25; car.yr*=0.45;
-    if(car.isPlayer){camShake=Math.min(1,camShake+0.4); if(hitCd<=0){thud();hitCd=0.3;}}
+    if(car.isPlayer){car.shake=Math.min(1,(car.shake||0)+0.4); if(hitCd<=0){thud();hitCd=0.3;}}
   }
 }
 function driveCar(car,thr,brk,steerIn,hand,dt){
@@ -509,7 +760,7 @@ function updateLap(car){
   }else if(car.prevNode<N*0.28&&car.node>N*0.72){car.lapsCrossed=Math.max(-1,car.lapsCrossed-1);}
   car.progress=car.lapsCrossed*T.len+T.cum[car.node];
 }
-let camShake=0, hitCd=0, playerHit=false;
+let hitCd=0, playerHit=false;   // shake now lives per car (car.shake) so each split half shakes on its own
 function collideCars(){
   // capsule hit box: two circles per car (front + rear) => proper long-car collisions
   const R=1.05, off=1.5, mn=R*2;
@@ -536,23 +787,32 @@ function update(dt){
     engineSound(0);return;}
   if(state!=='racing')return;
   raceClock+=dt;
-  // DRS boost + tyre wear (player)
-  const wantBoost=isDown(K.boost)&&player.boost>0.03&&!player.off;
-  player.boostOn=wantBoost;
-  player.boost=clamp(player.boost+(wantBoost?-0.40:0.11)*dt,0,1);
-  player.tyre=Math.max(0.87, player.tyre-(0.004+(player.off?0.018:0)+player.slip*0.03)*dt);
-  let s=0;if(isDown(K.left))s-=1;if(isDown(K.right))s+=1;
-  driveCar(player,isDown(K.up),isDown(K.down),s,isDown(K.hand),dt); engineSound(player.spd);
+  // every seated human drives their own car off their own keys
+  for(const c of cars){
+    if(!c.isPlayer)continue;
+    const P=padFor(c);
+    const wantBoost=isDown(P.boost)&&c.boost>0.03&&!c.off;
+    c.boostOn=wantBoost;
+    c.boost=clamp(c.boost+(wantBoost?-0.40:0.11)*dt,0,1);
+    c.tyre=Math.max(0.87, c.tyre-(0.004+(c.off?0.018:0)+c.slip*0.03)*dt);
+    let s=0;if(isDown(P.left))s-=1;if(isDown(P.right))s+=1;
+    driveCar(c,isDown(P.up),isDown(P.down),s,isDown(P.hand),dt);
+  }
+  engineSound(player.spd);
   for(const c of cars)if(!c.isPlayer)aiControl(c,dt);   // keep finished cars driving (cool-down), don't freeze
   for(const c of cars)clampToWalls(c);                  // barriers: cars can't leave the track
   collideCars(); for(const c of cars)updateLap(c);
-  // collect coins
-  for(const cn of coins){ if(cn.got)continue; const dx=cn.x-player.x,dy=cn.y-player.y;
-    if(dx*dx+dy*dy<14){ cn.got=true; cn.mesh.visible=false; money+=25; raceCoins++; saveEcon(); beep(1500,0.05,0.05); } }
-  // impact + slide feedback (camera shake + thud)
+  // collect coins — either seated player can pick one up
+  for(const cn of coins){ if(cn.got)continue;
+    for(const c of cars){ if(!c.isPlayer)continue;
+      const dx=cn.x-c.x,dy=cn.y-c.y;
+      if(dx*dx+dy*dy<14){ cn.got=true; cn.mesh.visible=false; money+=25; raceCoins++; saveEcon(); beep(1500,0.05,0.05); break; } } }
+  // impact + slide feedback: each seat shakes its own camera
   hitCd=Math.max(0,hitCd-dt);
-  if(playerHit&&hitCd<=0){camShake=Math.min(1,camShake+0.45);thud();hitCd=0.35;} playerHit=false;
-  camShake=Math.max(camShake*(1-dt*5), player.slip*0.35+((player.off&&Math.abs(player.spd)>12)?0.12:0));
+  if(playerHit&&hitCd<=0){thud();hitCd=0.35;for(const c of cars)if(c.isPlayer)c.shake=Math.min(1,(c.shake||0)+0.45);}
+  playerHit=false;
+  for(const c of cars)if(c.isPlayer)
+    c.shake=Math.max((c.shake||0)*(1-dt*5), c.slip*0.35+((c.off&&Math.abs(c.spd)>12)?0.12:0));
   // marshal recovery: place a beached car back on the racing line
   for(const c of cars){ if(c.finished)continue;
     if(c.off && Math.abs(c.spd)<18) c.stuckT+=dt; else c.stuckT=Math.max(0,c.stuckT-dt*4);
@@ -562,14 +822,17 @@ function update(dt){
       if(c.isPlayer) setMsg('RECOVERED',0.9);
     }
   }
-  if(player.finished){state='finished';showResults();}
+  // split screen waits for BOTH seats before showing the classification
+  if(cars.every(c=>!c.isPlayer||c.finished)){state='finished';showResults();}
   if(msgT>0){msgT-=dt;if(msgT<=0)el('msg').classList.remove('show');}
 }
 function showResults(){
   const order=positions(),tb=el('resBody');tb.innerHTML='';
+  const twoUp=cars.filter(c=>c.isPlayer).length>1;
   order.forEach((c,i)=>{const tr=document.createElement('tr');if(c.isPlayer)tr.className='you';
-    tr.innerHTML='<td class="p">'+(i+1)+'</td><td>'+(c.isPlayer?'YOU':'AI · '+c.livery.name)+'</td><td>'+fmtTime(c.bestLap)+'</td><td>'+(c.finished?fmtTime(c.finishTime):'DNF')+'</td>';tb.appendChild(tr);});
-  const pl=order.findIndex(c=>c.isPlayer)+1;
+    const who=c.isPlayer?(twoUp?'PLAYER '+(c.seat+1):'YOU'):'AI · '+c.livery.name;
+    tr.innerHTML='<td class="p">'+(i+1)+'</td><td>'+who+'</td><td>'+fmtTime(c.bestLap)+'</td><td>'+(c.finished?fmtTime(c.finishTime):'DNF')+'</td>';tb.appendChild(tr);});
+  const pl=order.findIndex(c=>c===player)+1;
   const prize=[0,1000,700,500,350,250,180][Math.min(6,pl)]||150;   // finishing money by position
   money+=prize; saveEcon();
   el('resTitle').textContent=pl===1?'🏆 VICTORY':(pl<=3?'PODIUM · P'+pl:'P'+pl);
@@ -772,16 +1035,30 @@ function makeCarRig(tint){
   rig.userData={wheels,dist:0};
   return rig;
 }
+// grid slot k: two staggered columns, as an F1 grid is. Widening the track let the
+// columns move further apart; 23 cars reach ~100m back from the line.
+function gridSlot(k){return{back:8+Math.floor(k/2)*8.6, col:(k%2?1:-1)*4.4};}
+// the car model is ~19.5k tris, so build rigs on demand rather than 23 up front
+function ensureRigs(n){
+  const want=Math.min(n|0,MAX_GRID);
+  while(rigs.length<want){
+    const rig=makeCarRig(LIVERIES[rigs.length%LIVERIES.length].tint);
+    rig.visible=false; scene.add(rig); rigs.push(rig);
+  }
+}
 function buildRigs(){
-  for(let i=0;i<6;i++){ const rig=makeCarRig(LIVERIES[i].tint); rig.visible=false; scene.add(rig); rigs.push(rig); }
-  modelReady=true; const pb=el('playBtn'); pb.disabled=false; pb.textContent='START RACE ▸';
+  ensureRigs(6);                      // enough for the menu scene; the rest on demand
+  modelReady=true; syncSetup();
   showMenuGrid();
 }
 function showMenuGrid(){   // park the cars on the starting grid so the menu shows a live scene
   if(!rigs.length||!T)return;
-  const t0=T.tan[0],n0=T.nrm[0],ang=Math.atan2(t0.y,t0.x);
-  for(let k=0;k<rigs.length;k++){const row=Math.floor(k/2),col=k%2?1:-1,back=8+row*9.5;
-    rigs[k].position.set(T.c[0].x-t0.x*back+n0.x*col*3.6,0,T.c[0].y-t0.y*back+n0.y*col*3.6);
+  ensureRigs(Math.min(fieldSize(),8));            // preview a few, not the whole field
+  const t0=T.tan[0],n0=T.nrm[0],ang=Math.atan2(t0.y,t0.x),show=Math.min(rigs.length,fieldSize());
+  for(let k=0;k<rigs.length;k++){
+    if(k>=show){rigs[k].visible=false;continue;}
+    const g=gridSlot(k);
+    rigs[k].position.set(T.c[0].x-t0.x*g.back+n0.x*g.col,0,T.c[0].y-t0.y*g.back+n0.y*g.col);
     rigs[k].rotation.y=-ang; rigs[k].visible=true;
     const ud=rigs[k].userData; if(ud&&ud.wheels)for(const w of ud.wheels)if(w.front)w.grp.rotation.y=0;}
 }
@@ -841,26 +1118,162 @@ function emitEffects(dt){
 let ws=null, mpConnected=false, myId=null;
 const remotes=new Map();
 const RTINTS=[0x00e0ff,0xff5ac8,0x9dff3c,0xffb030,0xb9a0ff,0xff5050,0x40ffb0,0xffe040];
+let lobbies=[], myLobby=null, lobbyPoll=0, pendingCreate=false, lobbyErr='';
+// null = haven't heard back yet, false = this server predates lobbies (fall back to codes)
+let lobbySupported=null, lobbyProbe=0;
 function mpStat(txt,on){const e=el('mpStatus');if(e){e.textContent=txt;e.classList.toggle('on',!!on);}}
 function playerName(){return (((el('mpName')&&el('mpName').value)||'Racer').trim()||'Racer').slice(0,16);}
 function mpEnabled(){return !!(el('mpEnable')&&el('mpEnable').checked&&(el('mpUrl').value||'').trim());}
+function mpSend(o){if(ws&&mpConnected){try{ws.send(JSON.stringify(o));return true;}catch(e){}}return false;}
 function mpConnect(){
   const url=(el('mpUrl').value||'').trim(); if(!url){mpStat('offline');return;}
   try{ if(ws){try{ws.close();}catch(e){}}
     ws=new WebSocket(url); mpStat('connecting…');
-    ws.onopen=()=>{mpConnected=true;mpStat(roomCode()?('online · '+roomCode()):'online',true);mpHello();};
-    ws.onclose=()=>{mpConnected=false;mpStat('offline');clearRemotes();};
-    ws.onerror=()=>{mpConnected=false;mpStat('offline');};
+    ws.onopen=()=>{mpConnected=true;mpStat('online',true);lobbySupported=null;lobbyProbe=0;
+      if(state==='countdown'||state==='racing'){mpHello();mpSend({t:'race',on:true});}   // connected late: join and race
+      else if(pendingCreate){pendingCreate=false;createLobby();}
+      else if(roomCode())enterLobbyCode(roomCode());
+      else mpSend({t:'list'});
+      renderLobbies();};
+    // a queued create must not fire on some unrelated reconnect minutes later
+    ws.onclose=()=>{mpConnected=false;pendingCreate=false;mpStat('offline');clearRemotes();lobbies=[];myLobby=null;renderLobbies();};
+    ws.onerror=()=>{mpConnected=false;pendingCreate=false;mpStat('offline');renderLobbies();};
     ws.onmessage=(ev)=>{let m;try{m=JSON.parse(ev.data);}catch(e){return;}mpHandle(m);};
   }catch(e){mpConnected=false;mpStat('offline');}
 }
 function roomCode(){return ((el('mpRoom')&&el('mpRoom').value)||'').trim().toUpperCase().slice(0,8);}
-function mpHello(){if(ws&&mpConnected){try{ws.send(JSON.stringify({t:'hello',name:playerName(),livery:0,track:selTrack,room:roomCode()}));}catch(e){}}}
+// in a lobby we race ITS circuit; otherwise the public room for whatever's selected.
+// trk/code override that when switching lobbies, before myLobby has caught up.
+function mpHello(trk,code){mpSend({t:'hello',name:playerName(),livery:0,
+  track:trk!=null?trk:(myLobby?myLobby.track:selTrack),laps:totalLaps,
+  room:code!=null?code:(myLobby?myLobby.code:roomCode())});}
+function createLobby(){
+  if(!mpConnected){pendingCreate=true;if(el('mpEnable'))el('mpEnable').checked=true;mpConnect();return;}
+  lobbyErr='';
+  if(lobbySupported===false){                    // older server: make a code ourselves, as it always did
+    let c='';for(let i=0;i<4;i++)c+='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)];
+    if(el('mpRoom'))el('mpRoom').value=c;
+    mpHello(selTrack,c); lobbyErr='Room '+c+' ready — share the code. (This server has no lobby list.)';
+    renderLobbies(); return;
+  }
+  mpSend({t:'create',name:playerName(),track:selTrack,laps:totalLaps});
+}
+function enterLobbyCode(code){ if(!code)return; lobbyErr='';
+  if(!mpConnected){if(el('mpEnable'))el('mpEnable').checked=true;mpConnect();return;}
+  mpSend({t:'enter',code,name:playerName()});
+}
+function leaveLobby(){ myLobby=null; pendingCreate=false;
+  if(el('mpRoom'))el('mpRoom').value='';        // else the next hello silently re-creates it
+  mpSend({t:'leave'}); clearRemotes(); renderLobbies(); }
 function mpHandle(m){
   if(m.t==='id')myId=m.id;
   else if(m.t==='join')ensureRemote(m.id,m.name,m.livery);
   else if(m.t==='s'){if(m.id===myId)return;const r=ensureRemote(m.id);r.tx=m.x;r.ty=m.y;r.ta=m.a;r.sp=m.sp;r.lap=m.lap;r.seen=0;}
   else if(m.t==='bye')removeRemote(m.id);
+  else if(m.t==='lobbies'){lobbySupported=true;lobbies=Array.isArray(m.list)?m.list:[];renderLobbies();}
+  else if(m.t==='lobby'){lobbySupported=true;
+    const was=myLobby; myLobby=m.lobby||null;
+    if(myLobby){
+      if(el('mpRoom'))el('mpRoom').value=myLobby.code||'';
+      mpStat('lobby '+(myLobby.code||'public'),true);
+      if(was&&was.key!==myLobby.key)clearRemotes();          // different lobby: drop its cars
+      // adopt the lobby's circuit + laps so everyone simulates the same track — but
+      // never mid-race: totalLaps drives the finish test and showMenuGrid moves the rigs
+      if((!was||was.track!==myLobby.track||was.laps!==myLobby.laps)&&state==='menu')adoptLobby(myLobby);
+    }else{ mpStat(mpConnected?'online':'offline',mpConnected); if(was)clearRemotes(); }
+    renderLobbies();
+  }
+  else if(m.t==='err'){
+    lobbyErr={gone:'That lobby has closed.',full:'That lobby is full.',busy:'Server is busy — try again.',
+      'slow-down':'Slow down a moment.'}[m.why]||'Could not join that lobby.';
+    renderLobbies();
+  }
+}
+// a lobby's circuit index arrives from another player via a server that only clamps
+// it to 0..999 — anything outside our own TRACKS table must never reach selTrack,
+// the store, or the saved economy
+function validTrack(i){return Number.isInteger(i)&&i>=0&&i<TRACKS.length;}
+function adoptLobby(L){
+  if(validTrack(L.track)&&owned.has(L.track)) selTrack=L.track;
+  totalLaps=clamp(L.laps|0,1,50)||3;
+  const seg=document.querySelectorAll('#segLaps button');
+  let hit=false; seg.forEach(b=>{const on=+b.dataset.v===totalLaps;b.classList.toggle('sel',on);if(on)hit=true;});
+  if(!hit&&seg.length)seg[0].classList.add('sel');   // custom lap count: leave the segment showing the default
+  renderMapGrid(); showMenuGrid();
+}
+const escHtml=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const trackName=i=>(TRACKS[i]&&TRACKS[i].name)||('Unknown circuit #'+(i|0));
+function renderLobbies(){
+  const wrap=el('lobbyWrap'),list=el('lobbyList'),mine=el('lobbyMine'); if(!wrap||!list)return;
+  wrap.classList.toggle('show',mpEnabled());
+  // ---- the lobby you're in, with its full details ----
+  if(mine){
+    mine.classList.toggle('show',!!myLobby);
+    if(myLobby){
+      const L=myLobby, own=owned.has(L.track);
+      el('lmCode').textContent=L.code||'PUBLIC';
+      el('lmTrack').textContent=trackName(L.track)+' · '+L.laps+' lap'+(L.laps===1?'':'s');
+      el('lmMeta').textContent=(L.pub?'Public lobby':'Host '+L.host)+' · '+L.players+'/'+L.max+' racing'
+        +(L.racing?' · race in progress':'');
+      el('lmWho').textContent=(L.names||[]).join(' · ')||'—';
+      const warn=el('lmWarn'), price=TRACKS[L.track]?TRACKS[L.track].price:0;
+      warn.classList.toggle('hide',own);
+      if(!own)warn.textContent='🔒 You don\'t own '+trackName(L.track)+' — buy it for $'+price+' in the store above to race here.';
+    }
+  }
+  // ---- the directory ----
+  const count=el('lobbyCount');
+  if(count)count.textContent=mpConnected?(lobbies.length?lobbies.length+' open':'') : '';
+  list.innerHTML=lobbyListHTML();
+  syncSetup();                     // START NOW · n/22 tracks the lobby population
+}
+// built as a string (one delegated click handler below) so it stays pure and testable
+function lobbyListHTML(){
+  let h=lobbyErr?'<div class="lempty" style="color:var(--yellow)">'+escHtml(lobbyErr)+'</div>':'';
+  if(!lobbies.length)                      // never blank a list we still hold on a brief socket blip
+    return h+'<div class="lempty">'+(!mpConnected
+      ?(mpEnabled()?'Connecting to the server…':'Tick the box to go online.')
+      :lobbySupported===false
+        ?'This server is an older build with no lobby list.<br>Share a <b>code</b> instead — type it and hit Join.'
+      :lobbySupported===null?'Asking the server who\'s online…'
+      :'Nobody racing right now.<br>Hit <b>+ CREATE LOBBY</b> and share the code.')+'</div>';
+  for(const L of lobbies){
+    const good=validTrack(L.track), own=good&&owned.has(L.track);
+    const full=(L.players|0)>=(L.max|0), isMine=!!myLobby&&myLobby.key===L.key;
+    const laps=L.laps|0;
+    h+='<div class="lrow'+(own?'':' locked')+(isMine?' mine':'')+'" data-key="'+escHtml(L.key)+'">'
+      +'<span class="lcode'+(L.pub?' pub':'')+'">'+(L.pub?'PUB':escHtml(L.code||'····'))+'</span>'
+      +'<span class="lmid"><span class="ltrk">'+(own?'':good?'🔒 ':'⚠ ')+escHtml(trackName(L.track))
+        +' · '+laps+' lap'+(laps===1?'':'s')+'</span>'
+      +'<span class="lsub">'+(L.pub?'Public':'Host '+escHtml(L.host))
+        +(L.names&&L.names.length?' · '+escHtml(L.names.join(', ')):'')+'</span></span>'
+      +'<span class="lpl">'+(L.players|0)+'/'+(L.max|0)+'</span>'
+      +(L.racing?'<span class="lbadge racing">racing</span>'
+        :full?'<span class="lbadge full">full</span>':'<span class="lbadge open">open</span>')
+      +'</div>';
+  }
+  return h;
+}
+if(el('lobbyList'))el('lobbyList').onclick=(e)=>{
+  const row=e.target&&e.target.closest?e.target.closest('.lrow'):null; if(!row)return;
+  const L=lobbies.find(x=>x.key===row.dataset.key); if(L)joinFromList(L,row);
+};
+function joinFromList(L,row){
+  lobbyErr='';
+  const nope=()=>{if(!row)return;row.classList.add('cant');setTimeout(()=>row.classList.remove('cant'),360);};
+  const bail=msg=>{lobbyErr=msg;nope();renderLobbies();return true;};
+  // ---- validate BEFORE spending anything: a lobby's track index is a stranger's
+  // number, and the server only clamps it to 0..999 — we have far fewer circuits
+  if(!validTrack(L.track)) return void bail('That lobby is advertising a circuit this version doesn\'t have.');
+  if((L.players|0)>=(L.max|0)&&!(myLobby&&myLobby.key===L.key)) return void bail('That lobby is full.');
+  if(!owned.has(L.track)){                       // only now is it safe to charge for the circuit
+    const price=TRACKS[L.track].price;
+    if(money<price) return void bail('You need $'+price+' to race '+trackName(L.track)+'.');
+    money-=price;owned.add(L.track);saveEcon();beep(1000,0.12,0.08);
+  }
+  if(L.pub){ if(el('mpRoom'))el('mpRoom').value=''; selTrack=L.track; adoptLobby(L);
+    myLobby=null; mpHello(L.track,''); }        // explicit: myLobby is still the lobby we're leaving
+  else enterLobbyCode(L.code);
 }
 function ensureRemote(id,name,livery){
   let r=remotes.get(id);
@@ -873,6 +1286,10 @@ function clearRemotes(){for(const r of remotes.values())scene.remove(r.rig);remo
 let mpAcc=0;
 function mpTick(dt){
   if(!ws||!mpConnected)return;
+  // a server that never answers our first `list` predates lobbies — fall back to codes
+  if(lobbySupported===null){ lobbyProbe+=dt; if(lobbyProbe>4){lobbySupported=false;renderLobbies();} }
+  // keep the directory fresh while browsing (the server also pushes on every change)
+  if(state==='menu'&&lobbySupported!==false){ lobbyPoll+=dt; if(lobbyPoll>5){lobbyPoll=0;mpSend({t:'list'});} }
   mpAcc+=dt;
   if(mpAcc>=0.066&&player&&state==='racing'){mpAcc=0;try{ws.send(JSON.stringify({t:'s',x:+player.x.toFixed(2),y:+player.y.toFixed(2),a:+player.a.toFixed(3),sp:+player.spd.toFixed(1),lap:player.lapsCrossed,nd:player.node}));}catch(e){}}
   for(const r of remotes.values()){
@@ -885,39 +1302,66 @@ function mpTick(dt){
   }
 }
 function remoteCount(){let n=0;for(const r of remotes.values())if(r.rig.visible)n++;return n;}
-if(el('mpEnable'))el('mpEnable').onchange=()=>{el('mpFields').classList.toggle('show',el('mpEnable').checked);};
-if(el('mpCreate'))el('mpCreate').onclick=()=>{const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let r='';for(let i=0;i<4;i++)r+=c[Math.floor(Math.random()*c.length)];el('mpRoom').value=r;el('mpEnable').checked=true;el('mpFields').classList.add('show');};
+// ticking the box goes online straight away, so the lobby list fills in the menu
+if(el('mpEnable'))el('mpEnable').onchange=()=>{
+  const on=el('mpEnable').checked;
+  el('mpFields').classList.toggle('show',on);
+  if(on)mpConnect();
+  else{ myLobby=null;lobbies=[];pendingCreate=false;if(ws){try{ws.close();}catch(e){}}ws=null;mpConnected=false;mpStat('offline');clearRemotes(); }
+  renderLobbies();
+};
+if(el('mpCreate'))el('mpCreate').onclick=()=>{ensureAudio();createLobby();};
+if(el('mpJoin'))el('mpJoin').onclick=()=>{ensureAudio();enterLobbyCode(roomCode());};
+if(el('mpLeave'))el('mpLeave').onclick=()=>leaveLobby();
+if(el('lobbyRefresh'))el('lobbyRefresh').onclick=()=>{lobbyErr='';if(!mpSend({t:'list'})&&mpEnabled())mpConnect();};
+if(el('mpRoom'))el('mpRoom').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();enterLobbyCode(roomCode());}};
+if(el('mpName'))el('mpName').onchange=()=>{if(myLobby)mpHello();};
 (function(){try{
   const qs=new URLSearchParams(location.search).get('server');
   const cfg=(typeof window!=='undefined'&&window.APEX_SERVER)?window.APEX_SERVER:'';
   const s=qs||cfg;
-  if(s&&el('mpUrl')){el('mpUrl').value=s;el('mpEnable').checked=true;el('mpFields').classList.add('show');}
+  if(s&&el('mpUrl')){el('mpUrl').value=s;el('mpFields').classList.add('show');
+    // a shared ?lobby=CODE link drops you straight onto the online page
+    const room=new URLSearchParams(location.search).get('lobby');
+    if(room&&el('mpRoom')){el('mpRoom').value=room.toUpperCase().slice(0,8);showPage('online');}
+  }
+  renderLobbies();
 }catch(e){}})();
 
 /* ---- camera ---- */
-const _cp=new THREE.Vector3(),_look=new THREE.Vector3(); let menuTheta=0, camA=0, camInit=false;
+const _cp=new THREE.Vector3(),_look=new THREE.Vector3(); let menuTheta=0;
+let cam2=null;   // second camera, only built if someone actually plays split screen
+function ensureCam2(){
+  if(!cam2){cam2=new THREE.PerspectiveCamera(camera.fov,1,camera.near,camera.far);scene.add(cam2);}
+  return cam2;
+}
 function updateCamera(dt){
   if(!player||state==='menu'){menuTheta+=dt*0.14;
     const gx=T?T.c[0].x:0, gz=T?T.c[0].y:0, t0=T?T.tan[0]:{x:1,y:0};
     const cx=gx-t0.x*22, cz=gz-t0.y*22, R=30;   // orbit the starting grid
     camera.position.set(cx+Math.cos(menuTheta)*R, 11+Math.sin(menuTheta*0.7)*3, cz+Math.sin(menuTheta)*R);
     camera.lookAt(cx,1.6,cz); return;}
-  const x=player.x,z=player.y,a=player.a,fx=Math.cos(a),fz=Math.sin(a);
+  updateCameraFor(player,camera,dt);
+}
+// one car, one camera — called twice per frame when the screen is split
+function updateCameraFor(car,cam,dt){
+  const x=car.x,z=car.y,a=car.a,fx=Math.cos(a),fz=Math.sin(a);
   if(camMode==='cockpit'){
-    camera.position.set(x+fx*0.5,1.25,z+fz*0.5);camera.lookAt(x+fx*40,1.05,z+fz*40);
+    cam.position.set(x+fx*0.5,1.25,z+fz*0.5);cam.lookAt(x+fx*40,1.05,z+fz*40);
   }else{
     // chase yaw trails the direction of TRAVEL, not the nose, so a slide shows the
     // car's flank instead of snapping the camera around with the yaw
-    const tgt=a+(player.beta||0)*0.55;
-    camA=camInit?camA+wrapAngle(tgt-camA)*clamp(dt*6,0,1):(camInit=true,tgt);
-    const cx=Math.cos(camA),cz=Math.sin(camA);
-    const sp=Math.abs(player.spd), back=8.2+sp*0.055, high=3.4+sp*0.014, ahead=18+sp*0.14; // pull back at speed
+    const tgt=a+(car.beta||0)*0.55;
+    car.camA=car.camInit?car.camA+wrapAngle(tgt-car.camA)*clamp(dt*6,0,1):(car.camInit=true,tgt);
+    const cx=Math.cos(car.camA),cz=Math.sin(car.camA);
+    const sp=Math.abs(car.spd), back=8.2+sp*0.055, high=3.4+sp*0.014, ahead=18+sp*0.14; // pull back at speed
     _cp.set(x-cx*back,high,z-cz*back);
-    camera.position.lerp(_cp, state==='countdown'?1:clamp(dt*7,0,1));
-    _look.set(x+cx*ahead,1.6,z+cz*ahead);camera.lookAt(_look);
+    cam.position.lerp(_cp, state==='countdown'?1:clamp(dt*7,0,1));
+    _look.set(x+cx*ahead,1.6,z+cz*ahead);cam.lookAt(_look);
   }
-  if(camShake>0.001){const s=camShake*0.6;                       // impact / slide shake
-    camera.position.x+=(Math.random()-0.5)*s;camera.position.y+=(Math.random()-0.5)*s*0.5;camera.position.z+=(Math.random()-0.5)*s;}
+  const sh=car.shake||0;
+  if(sh>0.001){const s=sh*0.6;                                   // impact / slide shake
+    cam.position.x+=(Math.random()-0.5)*s;cam.position.y+=(Math.random()-0.5)*s*0.5;cam.position.z+=(Math.random()-0.5)*s;}
 }
 function updateSun(){const px=player?player.x:0,pz=player?player.y:0;
   sun.position.set(px+110,190,pz+70); sun.target.position.set(px,0,pz); sun.target.updateMatrixWorld();}
@@ -933,18 +1377,31 @@ function drawMinimap(){
   mctx.strokeStyle='#e9edf2';mctx.lineWidth=1.4;mctx.stroke();
   mctx.fillStyle='#f2b705';mctx.beginPath();mctx.arc(MX(T.c[0].x),MY(T.c[0].y),2.4,0,TAU);mctx.fill();
   if(player)for(const c of cars){mctx.beginPath();mctx.arc(MX(c.x),MY(c.y),c.isPlayer?3.6:2.4,0,TAU);
-    mctx.fillStyle=c.isPlayer?'#fff':'#'+('000000'+(LIVERIES[cars.indexOf(c)].tint).toString(16)).slice(-6);mctx.fill();
-    if(c.isPlayer){mctx.strokeStyle='#e11020';mctx.lineWidth=1.4;mctx.stroke();}}
+    mctx.fillStyle=c.isPlayer?'#fff':'#'+('000000'+((c.livery&&c.livery.tint)||0x888888).toString(16)).slice(-6);mctx.fill();
+    if(c.isPlayer){mctx.strokeStyle=c.seat?'#1c46e0':'#e11020';mctx.lineWidth=1.4;mctx.stroke();}}
   for(const r of remotes.values())if(r.rig.visible){mctx.beginPath();mctx.arc(MX(r.x),MY(r.y),2.8,0,TAU);mctx.fillStyle='#00e0ff';mctx.fill();
     mctx.strokeStyle='#0af';mctx.lineWidth=1;mctx.stroke();}
 }
+// where a car sits in the order, counting online players too
+function rankOf(car){
+  const ps=rankScore(car); let rank=1;
+  for(const c of cars) if(c!==car && rankScore(c)<ps) rank++;
+  for(const r of remotes.values()) if(r.rig.visible && (1e6-(r.lap*T.len+T.cum[r.node]))<ps) rank++;
+  return rank;
+}
 function updateHUD(){
   if(!player)return;
+  if(splitOn()&&player2){                       // compact strip per half instead of the big cards
+    for(const [c,p] of [[player,'s1'],[player2,'s2']]){
+      const s=Math.abs(c.spd);
+      el(p+'spd').innerHTML=Math.max(0,Math.round(s*2.237))+'<small>MPH</small>';
+      el(p+'lap').textContent=clamp(c.lapsCrossed+1,1,totalLaps)+'/'+totalLaps;
+      el(p+'pos').textContent=rankOf(c);
+    }
+    return;
+  }
   el('lapNow').textContent=clamp(player.lapsCrossed+1,1,totalLaps);
-  // race position: finished cars first (by finish order), then by progress, incl online players
-  const ps=rankScore(player);
-  let rank=1; for(const c of cars) if(c!==player && rankScore(c)<ps) rank++;
-  for(const r of remotes.values()) if(r.rig.visible && (1e6-(r.lap*T.len+T.cum[r.node]))<ps) rank++;
+  const rank=rankOf(player);
   el('posNow').textContent=rank; el('posTot').textContent=cars.length+remoteCount();
   el('curTime').textContent=fmtTime(state==='racing'?Math.max(0,raceClock-player.lapStart):0);
   el('bestTime').textContent=fmtTime(player.bestLap);el('lastTime').textContent=fmtTime(player.lastLap);
@@ -993,8 +1450,25 @@ function frame(now){
   if(state==='racing'){emitEffects(dt);}
   mpTick(dt); updateAudio();
   for(const m of coinGroup.children) m.rotation.y+=dt*3;   // spin coins
-  updateSmoke(dt); updateSun(); updateCamera(dt);
-  if(composer) composer.render(); else renderer.render(scene,camera);
+  updateSmoke(dt); updateSun();
+  if(splitOn()&&player&&player2&&state!=='menu'){
+    // two viewports, one per seat. The post-processing composer renders whole
+    // frames only, so a split race runs on the plain renderer instead.
+    const w=innerWidth,h=innerHeight,hh=Math.floor(h/2);
+    renderer.setScissorTest(true);
+    for(const [car,cam,y] of [[player,camera,hh],[player2,ensureCam2(),0]]){
+      if(cam.aspect!==w/hh){cam.aspect=w/hh;cam.updateProjectionMatrix();}
+      updateCameraFor(car,cam,dt);
+      renderer.setViewport(0,y,w,hh); renderer.setScissor(0,y,w,hh);
+      renderer.render(scene,cam);
+    }
+    renderer.setScissorTest(false); renderer.setViewport(0,0,w,h);
+  }else{
+    const w=innerWidth,h=innerHeight;
+    if(camera.aspect!==w/h){camera.aspect=w/h;camera.updateProjectionMatrix();}  // restore after a split race
+    updateCamera(dt);
+    if(composer) composer.render(); else renderer.render(scene,camera);
+  }
   drawMinimap();updateHUD();
   requestAnimationFrame(frame);
 }
