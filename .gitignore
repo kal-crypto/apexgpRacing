@@ -4,3 +4,6 @@ Thumbs.db
 *.log
 .netlify/
 .render/
+
+# test artifacts
+tests/shot-*.png
