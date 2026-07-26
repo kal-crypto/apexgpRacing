@@ -164,6 +164,15 @@
   .devBtn .dstat{margin-left:auto;flex:0 0 auto;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
     border:1px solid var(--line);border-radius:20px;padding:2px 9px;color:var(--dim)}
   .devBtn .dstat.on{color:#37d07a;border-color:#37d07a66}
+  .padlive{display:none;margin-top:8px;border:1px solid #2a5cff55;background:#0b1428;border-radius:12px;padding:10px 12px}
+  .padlive.show{display:block}
+  .plrow{display:flex;align-items:center;gap:9px;margin-bottom:5px}
+  .pll{font-size:10px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase}
+  .plb{font-family:ui-monospace,Consolas,monospace;font-size:13px;color:#37d07a;letter-spacing:-1px}
+  .plhint{font-size:11px;color:var(--dim);line-height:1.45}
+  .plhint b{color:var(--txt)}
+  /* which menu button the pad is pointing at */
+  .padfocus{outline:2px solid var(--yellow);outline-offset:2px}
   /* ---- on-screen (touch) controls ---- */
   #touch{position:absolute;inset:0;z-index:8;display:none;touch-action:none;-webkit-user-select:none;user-select:none}
   body.touching #touch{display:block}
@@ -290,8 +299,15 @@
           <span><span class="dn">LAPTOP / PC</span><span class="dd">Keyboard — W A S D or the arrows</span></span>
           <span class="dstat on">ready</span></button>
         <button class="devBtn" id="devPad"><span class="ico">🎮</span>
-          <span><span class="dn">CONTROLLER</span><span class="dd" id="devPadName">PS4, Xbox or any gamepad</span></span>
+          <span><span class="dn">CONTROLLER</span><span class="dd" id="devPadName">PS4, Xbox or any gamepad — press a button to wake it</span></span>
           <span class="dstat" id="devPadStat">none</span></button>
+        <div class="padlive" id="padLive">
+          <div class="plrow"><span class="pll">STEER</span><span class="plb" id="padSteer">▯▯▯▯▯▯▯▯▯▯</span></div>
+          <div class="plrow"><span class="pll">R2 GAS</span><span class="plb" id="padGas">▯▯▯▯</span>
+            <span class="pll" style="margin-left:auto">L2 BRAKE</span><span class="plb" id="padBrk">▯▯▯▯</span></div>
+          <div class="plhint">Move the stick and squeeze the triggers — you should see this move.
+            <b>✕</b> selects, <b>○</b> goes back, so you can stay on the pad.</div>
+        </div>
         <button class="modeBtn alt" id="devNext" style="margin-top:14px">CONTINUE ▸</button>
       </div>
 
@@ -566,19 +582,44 @@ function padIndexFor(car){
   return device==='pad'?1:0;                         // seat 2 gets the next pad along
 }
 const DEAD=0.14, dz=v=>Math.abs(v)<DEAD?0:(v-Math.sign(v)*DEAD)/(1-DEAD);
-// PS4/Xbox via the browser's standard mapping: L stick X steers, R2/L2 are the pedals
+/* A DualShock 4 turns up in one of two shapes and you cannot tell them apart by
+   axis index. Chrome's "standard" mapping gives 4 axes (two sticks) with L2/R2 as
+   buttons 6/7. Raw HID — what you often get over Bluetooth on Windows — gives 6+
+   axes where L2/R2 ARE axes and the right stick sits where a standard pad has
+   nothing. Assuming the latter's axes 4/5 were triggers meant an untouched pad
+   read as full throttle, so the car drove itself.
+   So learn each pad instead: an axis that RESTS near -1 is a trigger; one resting
+   near 0 is a stick. L1/R1/L2/R2 are buttons 4/5/6/7 in both layouts; only the
+   four face buttons are reordered, and g.mapping tells us which way round. */
+const padCal=new Map();
+function padCalOf(g){
+  const key=g.index+':'+g.id;
+  let c=padCal.get(key);
+  if(!c){ const ax=[...(g.axes||[])];
+    c={rest:ax.slice(), trig:ax.map((v,i)=>i).filter(i=>i>1&&ax[i]<=-0.6)};
+    padCal.set(key,c); }
+  // self-heal: an axis seen at rest later is a trigger we mis-sampled while held
+  const ax=g.axes||[];
+  for(let i=2;i<ax.length;i++) if(ax[i]<=-0.9&&c.trig.indexOf(i)<0){ c.trig.push(i); c.trig.sort((a,b)=>a-b); c.rest[i]=-1; }
+  return c;
+}
 function readPad(i){
   const g=padsList()[i]; if(!g) return null;
-  const ax=g.axes||[], bt=g.buttons||[];
+  const ax=g.axes||[], bt=g.buttons||[], cal=padCalOf(g), std=g.mapping==='standard';
   const held=n=>!!(bt[n]&&(bt[n].pressed||bt[n].value>0.5));
-  const trig=n=>bt[n]?(bt[n].value!=null?bt[n].value:(bt[n].pressed?1:0)):0;
+  const btnVal=n=>bt[n]?(bt[n].value!=null?bt[n].value:(bt[n].pressed?1:0)):0;
+  const axVal=n=>{const r=cal.rest[n]!=null?cal.rest[n]:-1;return clamp(((ax[n]||0)-r)/((1-r)||1),0,1);};
+  // face buttons: cross/circle/square are reordered between the two layouts
+  const CROSS=std?0:1, CIRCLE=std?1:2, SQUARE=std?2:0, TRI=3;
   let steer=dz(ax[0]||0);
   if(!steer){ if(held(14))steer=-1; else if(held(15))steer=1; }        // d-pad fallback
-  // some drivers report the triggers as axes rather than buttons
-  let thr=trig(7), brk=trig(6);
-  if(thr<0.05&&ax.length>5) thr=Math.max(0,((ax[5]!=null?ax[5]:-1)+1)/2);
-  if(brk<0.05&&ax.length>4) brk=Math.max(0,((ax[4]!=null?ax[4]:-1)+1)/2);
-  return {steer, thr:thr>0.12||held(0), brk:brk>0.12||held(2), hand:held(1)||held(5), boost:held(3)||held(4)};
+  let brk=btnVal(6), thr=btnVal(7);                                    // L2 / R2 as buttons
+  if(thr<0.05&&brk<0.05&&cal.trig.length>=2){                          // ...or as axes
+    brk=axVal(cal.trig[0]); thr=axVal(cal.trig[1]);
+  }
+  return {steer, thr:thr>0.15||held(CROSS), brk:brk>0.15||held(SQUARE),
+          hand:held(CIRCLE)||held(5), boost:held(TRI)||held(4),
+          ok:held(CROSS), back:held(CIRCLE), navY:dz(ax[1]||0)||(held(13)?1:held(12)?-1:0)};
 }
 // what this car's driver is asking for this frame
 function readInput(car){
@@ -603,6 +644,42 @@ function setDevice(d,explicit){
   }
   document.body.classList.toggle('touching',device==='touch'&&state!=='menu');
   syncSetup();
+}
+/* ---- drive the menus from the pad, so you never need the keyboard ---- */
+let padFocus=0, padNavCd=0, padOkPrev=false, padBackPrev=false;
+function menuButtons(){
+  const panel=document.querySelector('#menu .panel'); if(!panel)return [];
+  return [...panel.querySelectorAll('button')].filter(b=>!b.disabled&&b.offsetParent!==null);
+}
+function padMenuTick(dt){
+  const btns=menuButtons();
+  if(state!=='menu'||!btns.length){ padOkPrev=padBackPrev=false; return; }
+  const p=readPad(0); if(!p){ document.querySelectorAll('.padfocus').forEach(b=>b.classList.remove('padfocus')); return; }
+  padNavCd=Math.max(0,padNavCd-dt);
+  if(Math.abs(p.navY)>0.5&&padNavCd<=0){
+    padFocus=(padFocus+(p.navY>0?1:-1)+btns.length)%btns.length; padNavCd=0.18; beep(700,0.03,0.04);
+  }
+  padFocus=clamp(padFocus,0,btns.length-1);
+  btns.forEach((b,i)=>b.classList.toggle('padfocus',i===padFocus));
+  if(p.ok&&!padOkPrev){ ensureAudio(); btns[padFocus].click(); padFocus=0; padNavCd=0.3; }
+  // the first back button that is actually ON SCREEN — they all exist in the DOM
+  if(p.back&&!padBackPrev){
+    const b=['setupBack','multiBack','rootBack'].map(el).find(x=>x&&x.offsetParent!==null);
+    if(b){ b.click(); padFocus=0; padNavCd=0.3; }
+  }
+  padOkPrev=p.ok; padBackPrev=p.back;
+}
+// live read-out on the device page, so you can see the pad working before you race
+function padLiveTick(){
+  const box=el('padLive'); if(!box)return;
+  const on=menuPage==='device'&&padCount()>0;
+  box.classList.toggle('show',on); if(!on)return;
+  const p=readPad(0); if(!p)return;
+  const bar=(v,neg)=>{const n=Math.round(Math.abs(v)*10);
+    return (neg&&v<0?'◀':'')+'▮'.repeat(n)+'▯'.repeat(10-n)+(neg&&v>0?'▶':'');};
+  el('padSteer').textContent=bar(p.steer,true);
+  el('padGas').textContent=p.thr?'▮▮▮▮':'▯▯▯▯';
+  el('padBrk').textContent=p.brk?'▮▮▮▮':'▯▯▯▯';
 }
 function refreshPadStatus(){
   const n=padCount(), st=el('devPadStat'), nm=el('devPadName');
@@ -1647,7 +1724,8 @@ function frame(now){
   if(state==='racing'){emitEffects(dt);}
   mpTick(dt); updateAudio();
   // gamepadconnected doesn't always fire until a button is pressed, so keep looking
-  if(state==='menu'&&menuPage==='device'){padPoll+=dt;if(padPoll>0.5){padPoll=0;refreshPadStatus();}}
+  if(state==='menu'){padPoll+=dt;if(padPoll>0.5){padPoll=0;refreshPadStatus();}
+    padMenuTick(dt); padLiveTick();}
   for(const m of coinGroup.children) m.rotation.y+=dt*3;   // spin coins
   updateSmoke(dt); updateSun();
   if(splitOn()&&player&&player2&&state!=='menu'){
