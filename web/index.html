@@ -194,11 +194,31 @@ function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a
 function fmtTime(t){if(t==null||!isFinite(t))return '—';const m=Math.floor(t/60),s=t-m*60;return m+':'+(s<10?'0':'')+s.toFixed(2);}
 
 /* --------------------------- PHYSICS MODEL ------------------------------ */
-// Grip-limited "friction-circle" model with aero downforce. You must brake
-// for corners: exceed the grip limit and the car understeers wide + scrubs speed.
+// F1-style single-track (bicycle) model with REAL slip angles. Each axle makes
+// lateral force through a Pacejka-ish curve that peaks around 7 deg of slip and
+// then FALLS OFF, so the car can rotate independently of where it's actually
+// travelling — genuine slip-angle drift — but like a real F1 car a big slide is
+// slow and wants to snap back: the quick way round is a tidy 2-3 deg of yaw.
+// Load transfer + a traction circle give trail-brake rotation and power
+// understeer on exit. Steering lock is grip-referenced (see steerLimit) so a
+// stab of lock can never out-run the tyres — no twitch, no instant spin.
 const PHYS={VMAX:180, WHEELBASE:3.2, MAXSTEER:0.42, G:9.81, MU:1.12, DF:0.0013,   // VMAX ~= 400 mph
-            CD:0.00022, ROLL:4.0, ENGINE:74, BRAKE:95, TAPER:0.72};
+            CD:0.00022, ROLL:4.0, ENGINE:74, BRAKE:95, TAPER:0.72,
+            AF:1.60, AR:1.60,      // centre of mass -> front / rear axle (m)
+            IZ:1.85,               // yaw inertia / mass (m^2) — low = F1-agile rotation
+            TB:14.0, TC:1.50,      // tyre curve: peak at ~7 deg slip, ~30% fall-off past it
+            BAL:0.94,              // front grip vs rear (<1 = stabilising understeer at the limit)
+            XFER:0.08,             // grip shifted front<->rear under braking / power (a nudge, not a snap)
+            LOCK:1.45,             // full lock = 1.45x the grip limit: slide, never insta-spin
+            HB_REAR:0.48};         // handbrake: fraction of rear grip left
 function gripCap(v,mu){return PHYS.G*(mu + PHYS.DF*v*v);}   // max lateral accel (m/s^2)
+// normalised axle lateral force (share of that axle's grip) for a slip angle
+function tyreForce(a){return Math.sin(PHYS.TC*Math.atan(PHYS.TB*a));}
+const SLIP_PEAK=Math.atan(Math.tan(Math.PI/(2*PHYS.TC))/PHYS.TB);   // slip angle of peak grip
+// steering angle worth giving the driver at this speed: just past the grip limit
+function steerLimit(v,cap){
+  return Math.min(PHYS.MAXSTEER, Math.max(0.052, Math.atan(PHYS.LOCK*cap*PHYS.WHEELBASE/Math.max(v*v,1))));
+}
 
 /* ------------------------------- TRACKS --------------------------------- */
 const TRACK_W=20, HALF=TRACK_W/2, BARRIER_OFF=2.0, CAR_HW=0.85;   // wider track
@@ -274,14 +294,15 @@ function nearestNode(x,y,hint){const N=T.N;let best=hint||0,bd=1e18;for(let d=-6
 const LIVERIES=[{name:'CARBON',tint:0xffffff},{name:'SCARLET',tint:0xff3030},{name:'AZZURRO',tint:0x3aa0ff},
   {name:'VERDE',tint:0x37d07a},{name:'VIPER',tint:0xb060ff},{name:'INFERNO',tint:0xff8a2a}];
 let cars=[],player=null,totalLaps=3,aiSkill=1.0;
-function makeCar(livery,isPlayer){return{livery,isPlayer,x:0,y:0,a:0,spd:0,steer:0,node:0,prevNode:0,
+function makeCar(livery,isPlayer){return{livery,isPlayer,x:0,y:0,a:0,spd:0,vy:0,yr:0,beta:0,steer:0,steerAng:0,node:0,prevNode:0,
   lapsCrossed:-1,lapStart:0,lastLap:null,bestLap:null,finished:false,finishTime:null,progress:0,pos:1,
   laneOff:(Math.random()-0.5)*2,skill:1,off:false,rig:null,brake:false,slip:0,stuckT:0,boost:1,boostOn:false,tyre:1};}
 function gridPlace(){
   const N=T.N,t0=T.tan[0],n0=T.nrm[0],ang=Math.atan2(t0.y,t0.x);
   cars.forEach((car,k)=>{const row=Math.floor(k/2),col=k%2?1:-1,back=8+row*9.5;
     car.x=T.c[0].x-t0.x*back+n0.x*col*3.6; car.y=T.c[0].y-t0.y*back+n0.y*col*3.6;
-    car.a=ang; car.spd=0; car.steer=0; car.node=nearestNode(car.x,car.y,N-3); car.prevNode=car.node;
+    car.a=ang; car.spd=0; car.steer=0; car.steerAng=0; car.vy=0; car.yr=0; car.beta=0; car.slip=0;
+    car.node=nearestNode(car.x,car.y,N-3); car.prevNode=car.node;
     car.lapsCrossed=-1; car.lapStart=0; car.lastLap=null; car.bestLap=null; car.finished=false; car.finishTime=null; car.off=false; car.brake=false;
     car.progress=car.lapsCrossed*T.len+T.cum[car.node];});
 }
@@ -337,7 +358,7 @@ function startRace(){
   cars=[makeCar(LIVERIES[0],true)];player=cars[0];
   for(let i=1;i<6;i++){const c=makeCar(LIVERIES[i],false);c.skill=aiSkill*(0.965+Math.random()*0.06);cars.push(c);}
   cars.forEach((c,i)=>{c.rig=rigs[i];if(c.rig)c.rig.visible=true;});
-  gridPlace(); resetEffects();
+  gridPlace(); resetEffects(); camInit=false;
   clearRemotes();
   if(mpEnabled()){ if(ws&&mpConnected) mpHello(); else mpConnect(); }
   else if(ws){ try{ws.close();}catch(e){} ws=null; mpConnected=false; mpStat('offline'); }
@@ -398,19 +419,20 @@ function clampToWalls(car){
   const WALL=HALF+BARRIER_OFF-CAR_HW;          // stop the car BODY at the barrier, not its centre
   if(Math.abs(lat)>WALL){ const sgn=lat<0?-1:1, push=sgn*WALL-lat;
     car.x+=n.x*push; car.y+=n.y*push;          // snap fully back inside — no penetration
-    // scrub the into-wall velocity so you scrape along, not bounce off
-    car.spd*=0.55;
+    // scrub the into-wall velocity so you scrape along, not bounce off (and stop any spin)
+    car.spd*=0.55; car.vy*=0.25; car.yr*=0.45;
     if(car.isPlayer){camShake=Math.min(1,camShake+0.4); if(hitCd<=0){thud();hitCd=0.3;}}
   }
 }
 function driveCar(car,thr,brk,steerIn,hand,dt){
   const P=PHYS; car.brake=brk;
   const surf=(car.off=offTrack(car))?0.5:1.0;                 // grass = half grip
+  const v0=Math.abs(car.spd);
   // ---- longitudinal ----
   const boosting=car.boostOn&&car.spd>4;                      // DRS
   const vmax=P.VMAX*(boosting?1.08:1);
-  let a=0;
-  if(thr) a+=P.ENGINE*(1-P.TAPER*Math.max(0,car.spd)/vmax)*(boosting?1.4:1); // keeps pulling near top speed
+  const aThr=thr?P.ENGINE*(1-P.TAPER*Math.max(0,car.spd)/vmax)*(boosting?1.4:1):0; // keeps pulling near top speed
+  let a=aThr;
   if(brk) a-=P.BRAKE;                                          // strong brakes
   a-=P.CD*car.spd*Math.abs(car.spd);                          // aero drag (~v^2)
   if(Math.abs(car.spd)>0.1) a-=P.ROLL*Math.sign(car.spd);     // rolling resistance
@@ -420,19 +442,42 @@ function driveCar(car,thr,brk,steerIn,hand,dt){
   if(hand) car.spd*=(1-3.2*dt);
   car.spd=clamp(car.spd,-13,vmax);
   if(!thr&&!brk&&Math.abs(car.spd)<0.08) car.spd=0;
-  // ---- steering: speed-sensitive angle, grip-limited yaw (friction circle) ----
-  car.steer=lerp(car.steer,steerIn,dt*6);
-  const steerAngle=car.steer*P.MAXSTEER*(0.30+0.70/(1+Math.abs(car.spd)*0.05))*(hand?1.4:1);
-  let omega=car.spd*Math.tan(steerAngle)/P.WHEELBASE;         // bicycle-model yaw rate
-  const cap=gripCap(Math.abs(car.spd),P.MU*surf*(car.tyre||1));   // worn tyres = less grip
-  const latAcc=Math.abs(car.spd*omega);
-  if(latAcc>cap && Math.abs(car.spd)>2){                       // exceeded grip -> understeer wide
-    omega=Math.sign(omega)*cap/Math.abs(car.spd);
-    car.spd-=Math.min(Math.abs(car.spd),(latAcc-cap)*0.16)*dt*6; // scrub speed sliding
-    car.slip=clamp((latAcc-cap)/cap,0,1);
-  }else car.slip=Math.max(0,car.slip-dt*3);
-  car.a+=omega*dt;
-  car.x+=Math.cos(car.a)*car.spd*dt; car.y+=Math.sin(car.a)*car.spd*dt;
+  // ---- steering rack: eases in, snaps back to centre, calmer the faster you go ----
+  const backing=Math.abs(steerIn)<Math.abs(car.steer);
+  const rate=(backing?9.0:3.8+2.6*(1-Math.min(v0/50,1)))*(car.isPlayer?1:1.35);
+  car.steer=lerp(car.steer,steerIn,Math.min(1,dt*rate));
+  const cap=gripCap(v0,P.MU*surf*(car.tyre||1));              // worn tyres = less grip
+  const d=car.steerAng=car.steer*steerLimit(v0,cap)*(hand?1.3:1);
+  // ---- axle grip: load transfer (brakes load the front) + traction circle ----
+  const xf=P.XFER*clamp((aThr-(brk?P.BRAKE:0))/60,-1,1);      // >0 under power, <0 on the brakes
+  const ux=Math.min(1,aThr/Math.max(cap,6)*0.14);             // rear grip spent on traction
+  // each axle carries half the mass, so half the grip budget — the two sum back to cap
+  let capF=cap*0.5*(P.BAL-xf), capR=cap*0.5*(1/P.BAL+xf)*Math.sqrt(Math.max(0.45,1-ux*ux));
+  if(hand) capR*=P.HB_REAR;                                    // handbrake unsticks the rear
+  // ---- lateral: slip angle per axle, integrated in small substeps for stability ----
+  const vs=Math.max(v0,3.0), sgn=car.spd<0?-1:1;              // keep slip angles finite at a crawl
+  const steps=Math.min(10,Math.max(1,Math.ceil(dt/0.005))), h=dt/steps;
+  let vy=car.vy, yr=car.yr;
+  for(let i=0;i<steps;i++){
+    const fy=-capF*tyreForce(Math.atan2(vy+yr*P.AF,vs)-d*sgn);
+    const ry=-capR*tyreForce(Math.atan2(vy-yr*P.AR,vs));
+    vy+=(fy+ry-yr*car.spd)*h;                                  // m*(vy' + yr*vx) = sum Fy
+    yr+=(P.AF*fy-P.AR*ry)/P.IZ*h;                              // Iz*yr' = a*Fyf - b*Fyr
+  }
+  const blend=clamp((v0-3.5)/5.5,0,1);                         // below walking pace: no-slip steering
+  const kin=car.spd*Math.tan(d)/P.WHEELBASE;                   // kinematic (zero-slip) yaw rate
+  car.yr=clamp(lerp(kin,yr,blend),-2.6,2.6); car.vy=clamp(vy*blend,-32,32);
+  if(!isFinite(car.yr))car.yr=0; if(!isFinite(car.vy))car.vy=0;
+  // ---- how sideways are we? drives screech, smoke, shake and tyre wear ----
+  const af=Math.atan2(car.vy+car.yr*P.AF,vs)-d*sgn, ar=Math.atan2(car.vy-car.yr*P.AR,vs);
+  car.beta=Math.atan2(car.vy,vs);
+  const sl=clamp((Math.max(Math.abs(af),Math.abs(ar))-SLIP_PEAK)/0.16,0,1);
+  car.slip=Math.max(sl,car.slip-dt*2.5);                       // short tail so screech doesn't chatter
+  if(v0>2) car.spd-=sgn*Math.min(v0*0.5,Math.abs(car.vy)*0.5+car.slip*7)*dt;  // sliding scrubs speed
+  // ---- integrate: heading and velocity are now two different things ----
+  car.a+=car.yr*dt;
+  const cs=Math.cos(car.a),sn=Math.sin(car.a);
+  car.x+=(cs*car.spd-sn*car.vy)*dt; car.y+=(sn*car.spd+cs*car.vy)*dt;
 }
 function aiControl(car,dt){
   const N=T.N;
@@ -440,7 +485,8 @@ function aiControl(car,dt){
   const aim={x:T.c[tgt].x+T.nrm[tgt].x*car.laneOff,y:T.c[tgt].y+T.nrm[tgt].y*car.laneOff};
   const diff=wrapAngle(Math.atan2(aim.y-car.y,aim.x-car.x)-car.a);
   const nn=car.node, latErr=(car.x-T.c[nn].x)*T.nrm[nn].x+(car.y-T.c[nn].y)*T.nrm[nn].y-car.laneOff;
-  const steerIn=clamp(diff*(car.off?3.4:2.5)-clamp(latErr*0.05,-0.7,0.7),-1,1); // hold the racing line
+  // hold the racing line, and catch the rear with a dab of opposite lock when it steps out
+  const steerIn=clamp(diff*(car.off?3.4:2.6)-clamp(latErr*0.05,-0.7,0.7)+car.beta*1.1,-1,1);
   let cs=PHYS.VMAX,dsum=0,i=car.node;const maxLook=10+car.spd*1.3;
   while(dsum<maxLook){cs=Math.min(cs,T.cspd[i]);dsum+=T.seg[i];i=(i+1)%N;}
   let ts=cs*Math.min(car.skill,0.98);                        // race near the grip-safe pace
@@ -511,7 +557,8 @@ function update(dt){
   for(const c of cars){ if(c.finished)continue;
     if(c.off && Math.abs(c.spd)<18) c.stuckT+=dt; else c.stuckT=Math.max(0,c.stuckT-dt*4);
     if(c.stuckT > (c.isPlayer?4.5:1.1)){ const n=(c.node+2)%T.N;   // struggling off-track -> back on the line, slow
-      c.x=T.c[n].x; c.y=T.c[n].y; c.a=Math.atan2(T.tan[n].y,T.tan[n].x); c.spd=Math.min(Math.abs(c.spd),8); c.steer=0; c.stuckT=0;
+      c.x=T.c[n].x; c.y=T.c[n].y; c.a=Math.atan2(T.tan[n].y,T.tan[n].x); c.spd=Math.min(Math.abs(c.spd),8);
+      c.steer=0; c.steerAng=0; c.vy=0; c.yr=0; c.beta=0; c.slip=0; c.stuckT=0;
       if(c.isPlayer) setMsg('RECOVERED',0.9);
     }
   }
@@ -777,7 +824,7 @@ function emitEffects(dt){
   effTick++;
   for(const c of cars){
     if(c.finished)continue;
-    const slip = c.off || c.slip>0.15 || (c.isPlayer&&isDown(K.hand)) || (c.brake&&c.spd>18);
+    const slip = c.off || c.slip>0.12 || Math.abs(c.beta||0)>0.10 || (c.isPlayer&&isDown(K.hand)) || (c.brake&&c.spd>18);
     if(!slip)continue;
     // rear axle contact points in world (sim x,y = world x,z)
     const fx=Math.cos(c.a),fy=Math.sin(c.a),rx=Math.sin(c.a),ry=-Math.cos(c.a);
@@ -848,7 +895,7 @@ if(el('mpCreate'))el('mpCreate').onclick=()=>{const c='ABCDEFGHJKLMNPQRSTUVWXYZ2
 }catch(e){}})();
 
 /* ---- camera ---- */
-const _cp=new THREE.Vector3(),_look=new THREE.Vector3(); let menuTheta=0;
+const _cp=new THREE.Vector3(),_look=new THREE.Vector3(); let menuTheta=0, camA=0, camInit=false;
 function updateCamera(dt){
   if(!player||state==='menu'){menuTheta+=dt*0.14;
     const gx=T?T.c[0].x:0, gz=T?T.c[0].y:0, t0=T?T.tan[0]:{x:1,y:0};
@@ -859,10 +906,15 @@ function updateCamera(dt){
   if(camMode==='cockpit'){
     camera.position.set(x+fx*0.5,1.25,z+fz*0.5);camera.lookAt(x+fx*40,1.05,z+fz*40);
   }else{
+    // chase yaw trails the direction of TRAVEL, not the nose, so a slide shows the
+    // car's flank instead of snapping the camera around with the yaw
+    const tgt=a+(player.beta||0)*0.55;
+    camA=camInit?camA+wrapAngle(tgt-camA)*clamp(dt*6,0,1):(camInit=true,tgt);
+    const cx=Math.cos(camA),cz=Math.sin(camA);
     const sp=Math.abs(player.spd), back=8.2+sp*0.055, high=3.4+sp*0.014, ahead=18+sp*0.14; // pull back at speed
-    _cp.set(x-fx*back,high,z-fz*back);
+    _cp.set(x-cx*back,high,z-cz*back);
     camera.position.lerp(_cp, state==='countdown'?1:clamp(dt*7,0,1));
-    _look.set(x+fx*ahead,1.6,z+fz*ahead);camera.lookAt(_look);
+    _look.set(x+cx*ahead,1.6,z+cz*ahead);camera.lookAt(_look);
   }
   if(camShake>0.001){const s=camShake*0.6;                       // impact / slide shake
     camera.position.x+=(Math.random()-0.5)*s;camera.position.y+=(Math.random()-0.5)*s*0.5;camera.position.z+=(Math.random()-0.5)*s;}
@@ -937,7 +989,7 @@ function frame(now){
   if(state==='racing'||state==='countdown')update(dt);
   for(const c of cars)if(c.rig){c.rig.position.set(c.x,0,c.y);c.rig.rotation.y=-c.a;
     const ud=c.rig.userData;ud.dist+=c.spd*dt;
-    for(const w of ud.wheels){w.spin.rotation.z=-ud.dist/w.r;if(w.front)w.grp.rotation.y=-c.steer*0.5;}}
+    for(const w of ud.wheels){w.spin.rotation.z=-ud.dist/w.r;if(w.front)w.grp.rotation.y=-(c.steerAng||0);}}
   if(state==='racing'){emitEffects(dt);}
   mpTick(dt); updateAudio();
   for(const m of coinGroup.children) m.rotation.y+=dt*3;   // spin coins
