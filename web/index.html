@@ -414,7 +414,7 @@
 <script src="GLTFLoader.js"></script>
 <script src="carmodel.js"></script>
 <!-- ▼ MULTIPLAYER: paste your Render server URL between the quotes to enable online
-     racing for everyone who opens the site, e.g. "wss://apexgp-server.onrender.com" -->
+     racing for everyone who opens the site, e.g. "wss://apexgpracing-server.onrender.com" -->
 <script>window.APEX_SERVER = "wss://apexgpracing-server.onrender.com";</script>
 <script>
 "use strict";
@@ -800,7 +800,9 @@ function showPage(p){
     mp:'ONLINE OR SPLIT SCREEN',offline:'OFFLINE · YOU AND THE BOTS',
     online:'ONLINE · UP TO 22 PLAYERS',local:'LOCAL PLAY · SPLIT SCREEN'}[p];
   if(el('menuSub')&&sub)el('menuSub').textContent=sub;
-  if(mode==='online'){ if(el('mpEnable'))el('mpEnable').checked=true; if(!mpConnected)mpConnect(); }
+  // key this off the page, not `mode`: mode stays 'online' after you back out to the
+  // MULTIPLAYER page, which used to re-tick the box and silently reconnect
+  if(p==='online'){ if(el('mpEnable'))el('mpEnable').checked=true; if(!mpConnected)mpConnect(); }
   syncSetup(); renderLobbies();
 }
 // keep the bots slider, seats and the start button honest about the current mode
@@ -924,6 +926,7 @@ el('setupBack').onclick=()=>{
   if(mode==='online'){                          // leaving online play hangs up properly
     if(myLobby)leaveLobby();
     if(el('mpEnable'))el('mpEnable').checked=false;
+    mpGiveUp();                                 // stop any pending reconnect
     if(ws){try{ws.close();}catch(e){}} ws=null;mpConnected=false;lobbies=[];mpStat('offline');
   }
   showPage(mode==='offline'?'root':'mp');
@@ -1418,19 +1421,41 @@ function mpStat(txt,on){const e=el('mpStatus');if(e){e.textContent=txt;e.classLi
 function playerName(){return (((el('mpName')&&el('mpName').value)||'Racer').trim()||'Racer').slice(0,16);}
 function mpEnabled(){return !!(el('mpEnable')&&el('mpEnable').checked&&(el('mpUrl').value||'').trim());}
 function mpSend(o){if(ws&&mpConnected){try{ws.send(JSON.stringify(o));return true;}catch(e){}}return false;}
+/* The multiplayer server is on Render's free tier, which SLEEPS after ~15 minutes
+   idle and then takes 15-60s to wake. The first socket to a cold instance often
+   just fails, and a single attempt with no retry left the game permanently
+   "offline" — indistinguishable from being broken. So keep trying while you're on
+   the online page, and say plainly that it's waking up rather than sitting on
+   "connecting…" with a dead START button. */
+let mpTries=0, mpRetryT=null;
+function mpGiveUp(){ if(mpRetryT){clearTimeout(mpRetryT);mpRetryT=null;} mpTries=0; }
+function mpRetry(){
+  // only while you're actually looking at the online page, or during a race
+  const live=menuPage==='online'||state==='racing'||state==='countdown';
+  if(mpRetryT||!live||!mpEnabled())return;
+  if(mpTries>=6){ mpStat('server asleep — retry'); renderLobbies(); return; }
+  const wait=Math.min(2000+mpTries*2500,12000);
+  mpStat('waking server… '+(mpTries+1)+'/6');
+  mpRetryT=setTimeout(()=>{mpRetryT=null;mpConnect();},wait);
+  renderLobbies();
+}
 function mpConnect(){
   const url=(el('mpUrl').value||'').trim(); if(!url){mpStat('offline');return;}
+  if(mpRetryT){clearTimeout(mpRetryT);mpRetryT=null;}
+  mpTries++;
   try{ if(ws){try{ws.close();}catch(e){}}
-    ws=new WebSocket(url); mpStat('connecting…');
-    ws.onopen=()=>{mpConnected=true;mpStat('online',true);lobbySupported=null;lobbyProbe=0;
+    ws=new WebSocket(url); mpStat(mpTries>1?('waking server… '+mpTries+'/6'):'connecting…');
+    ws.onopen=()=>{mpConnected=true;mpGiveUp();mpStat('online',true);lobbySupported=null;lobbyProbe=0;
       if(state==='countdown'||state==='racing'){mpHello();mpSend({t:'race',on:true});}   // connected late: join and race
       else if(pendingCreate){pendingCreate=false;createLobby();}
       else if(roomCode())enterLobbyCode(roomCode());
       else mpSend({t:'list'});
       renderLobbies();};
     // a queued create must not fire on some unrelated reconnect minutes later
-    ws.onclose=()=>{mpConnected=false;pendingCreate=false;mpStat('offline');clearRemotes();lobbies=[];myLobby=null;renderLobbies();};
-    ws.onerror=()=>{mpConnected=false;pendingCreate=false;mpStat('offline');renderLobbies();};
+    ws.onclose=()=>{mpConnected=false;pendingCreate=false;clearRemotes();lobbies=[];myLobby=null;
+      if(mpEnabled())mpRetry(); if(!mpRetryT){mpStat('offline');renderLobbies();}};
+    ws.onerror=()=>{mpConnected=false;pendingCreate=false;
+      if(mpEnabled())mpRetry(); if(!mpRetryT){mpStat('offline');renderLobbies();}};
     ws.onmessage=(ev)=>{let m;try{m=JSON.parse(ev.data);}catch(e){return;}mpHandle(m);};
   }catch(e){mpConnected=false;mpStat('offline');}
 }
@@ -1527,7 +1552,10 @@ function lobbyListHTML(){
   let h=lobbyErr?'<div class="lempty" style="color:var(--yellow)">'+escHtml(lobbyErr)+'</div>':'';
   if(!lobbies.length)                      // never blank a list we still hold on a brief socket blip
     return h+'<div class="lempty">'+(!mpConnected
-      ?(mpEnabled()?'Connecting to the server…':'Tick the box to go online.')
+      ?(!mpEnabled()?'Tick the box to go online.'
+        :mpTries>=6?'Can\'t reach the server.<br>It\'s on free hosting that sleeps — tap ↻ to try again.'
+        :mpTries>1?'Waking the server up…<br>Free hosting sleeps when idle; this takes up to a minute.'
+        :'Connecting to the server…')
       :lobbySupported===false
         ?'This server is an older build with no lobby list.<br>Share a <b>code</b> instead — type it and hit Join.'
       :lobbySupported===null?'Asking the server who\'s online…'
@@ -1602,13 +1630,15 @@ if(el('mpEnable'))el('mpEnable').onchange=()=>{
   const on=el('mpEnable').checked;
   el('mpFields').classList.toggle('show',on);
   if(on)mpConnect();
-  else{ myLobby=null;lobbies=[];pendingCreate=false;if(ws){try{ws.close();}catch(e){}}ws=null;mpConnected=false;mpStat('offline');clearRemotes(); }
+  else{ myLobby=null;lobbies=[];pendingCreate=false;mpGiveUp();if(ws){try{ws.close();}catch(e){}}ws=null;mpConnected=false;mpStat('offline');clearRemotes(); }
   renderLobbies();
 };
 if(el('mpCreate'))el('mpCreate').onclick=()=>{ensureAudio();createLobby();};
 if(el('mpJoin'))el('mpJoin').onclick=()=>{ensureAudio();enterLobbyCode(roomCode());};
 if(el('mpLeave'))el('mpLeave').onclick=()=>leaveLobby();
-if(el('lobbyRefresh'))el('lobbyRefresh').onclick=()=>{lobbyErr='';if(!mpSend({t:'list'})&&mpEnabled())mpConnect();};
+// ↻ also restarts the connection attempts if we'd given up on a sleeping server
+if(el('lobbyRefresh'))el('lobbyRefresh').onclick=()=>{lobbyErr='';
+  if(!mpSend({t:'list'})&&mpEnabled()){mpGiveUp();mpConnect();}};
 if(el('mpRoom'))el('mpRoom').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();enterLobbyCode(roomCode());}};
 if(el('mpName'))el('mpName').onchange=()=>{if(myLobby)mpHello();};
 (function(){try{
