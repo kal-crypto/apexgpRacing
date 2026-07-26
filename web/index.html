@@ -387,7 +387,8 @@
 
       <div class="keys"><span><b><kbd>W</kbd>/<kbd>↑</kbd></b> Throttle</span><span><b><kbd>S</kbd>/<kbd>↓</kbd></b> Brake</span>
         <span><b><kbd>A</kbd> <kbd>D</kbd></b> Steer</span><span><b><kbd>Shift</kbd></b> DRS boost</span><span><b><kbd>C</kbd></b> Cockpit/Chase</span><span><b><kbd>Space</kbd></b> Handbrake</span></div>
-      <div class="foot">Best lap: <span id="menuBest">—</span></div>
+      <div class="foot">Best lap: <span id="menuBest">—</span>
+        · build <span id="buildTag">?</span></div>
     </div>
   </div>
   <div id="results" class="overlay hide"><div class="panel">
@@ -423,6 +424,9 @@
    engine; the renderer is Three.js with the exported car body + procedural
    animated wheels, real shadows, tone-mapped lighting and effects. */
 const el = id => document.getElementById(id);
+// Shown in the menu footer. Bump it with any change worth telling the difference
+// between — it's how you confirm the browser is running the deploy you think it is.
+const BUILD='2026-07-26 · device-select';
 const TAU = Math.PI*2;
 const clamp=(v,a,b)=>v<a?a:v>b?b:v, lerp=(a,b,t)=>a+(b-a)*t;
 function wrapAngle(a){a%=TAU;if(a>Math.PI)a-=TAU;if(a<-Math.PI)a+=TAU;return a;}
@@ -909,6 +913,7 @@ document.querySelectorAll('#seatBox .seat').forEach((s,i)=>{ if(i===1) s.onclick
 };});
 (function(){const b=lsGet('apexgp_best');el('menuBest').textContent=b?fmtTime(+b):'—';})();
 setDevice(device); refreshPadStatus();          // reflect the remembered / detected device
+if(el('buildTag'))el('buildTag').textContent=BUILD;
 
 /* ------------------------------- SIM ------------------------------------ */
 function offTrack(car){

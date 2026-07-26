@@ -3,10 +3,17 @@
   publish = "web"
   command = ""
 
+# The bare domain is served as "/", NOT "/index.html", so a rule for the file alone
+# leaves the root cacheable and visitors keep seeing an old build after a deploy.
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "no-store, must-revalidate"
+
 [[headers]]
   for = "/index.html"
   [headers.values]
-    Cache-Control = "no-cache"
+    Cache-Control = "no-store, must-revalidate"
 
 [[headers]]
   for = "/*.js"
