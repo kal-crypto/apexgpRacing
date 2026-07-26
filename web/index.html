@@ -288,27 +288,26 @@
   <div id="menu" class="overlay">
     <div class="panel">
       <div class="title"><span class="g">APEX</span> GP <span style="font-size:22px;color:var(--blue)">3D</span></div>
-      <div class="sub" id="menuSub">23 CIRCUITS · 400 MPH · UP TO 23 CARS</div>
+      <div class="sub" id="menuSub">CHOOSE WHAT YOU'RE PLAYING ON</div>
 
       <!-- ===== page: pick what you're playing on ===== -->
       <div id="pgDevice">
-        <button class="devBtn" id="devPhone"><span class="ico">📱</span>
-          <span><span class="dn">PHONE / TABLET</span><span class="dd">On-screen wheel and pedals</span></span>
-          <span class="dstat" id="devPhoneStat">touch</span></button>
-        <button class="devBtn sel" id="devKeys"><span class="ico">⌨️</span>
-          <span><span class="dn">LAPTOP / PC</span><span class="dd">Keyboard — W A S D or the arrows</span></span>
-          <span class="dstat on">ready</span></button>
         <button class="devBtn" id="devPad"><span class="ico">🎮</span>
-          <span><span class="dn">CONTROLLER</span><span class="dd" id="devPadName">PS4, Xbox or any gamepad — press a button to wake it</span></span>
+          <span><span class="dn">CONTROLLER</span><span class="dd" id="devPadName">PS4, Xbox or any gamepad</span></span>
           <span class="dstat" id="devPadStat">none</span></button>
+        <button class="devBtn sel" id="devKeys"><span class="ico">🖥️</span>
+          <span><span class="dn">DESKTOP</span><span class="dd">Keyboard — W A S D or the arrows</span></span>
+          <span class="dstat on">ready</span></button>
+        <button class="devBtn" id="devPhone"><span class="ico">📱</span>
+          <span><span class="dn">PHONE</span><span class="dd">On-screen wheel and pedals</span></span>
+          <span class="dstat" id="devPhoneStat">touch</span></button>
         <div class="padlive" id="padLive">
           <div class="plrow"><span class="pll">STEER</span><span class="plb" id="padSteer">▯▯▯▯▯▯▯▯▯▯</span></div>
           <div class="plrow"><span class="pll">R2 GAS</span><span class="plb" id="padGas">▯▯▯▯</span>
             <span class="pll" style="margin-left:auto">L2 BRAKE</span><span class="plb" id="padBrk">▯▯▯▯</span></div>
-          <div class="plhint">Move the stick and squeeze the triggers — you should see this move.
+          <div class="plhint" id="padHint">Move the stick and squeeze the triggers — you should see this move.
             <b>✕</b> selects, <b>○</b> goes back, so you can stay on the pad.</div>
         </div>
-        <button class="modeBtn alt" id="devNext" style="margin-top:14px">CONTINUE ▸</button>
       </div>
 
       <!-- ===== page: pick how you race ===== -->
@@ -426,7 +425,7 @@
 const el = id => document.getElementById(id);
 // Shown in the menu footer. Bump it with any change worth telling the difference
 // between — it's how you confirm the browser is running the deploy you think it is.
-const BUILD='2026-07-26 · device-select';
+const BUILD='2026-07-26 · one-tap-device';
 const TAU = Math.PI*2;
 const clamp=(v,a,b)=>v<a?a:v>b?b:v, lerp=(a,b,t)=>a+(b-a)*t;
 function wrapAngle(a){a%=TAU;if(a>Math.PI)a-=TAU;if(a<-Math.PI)a+=TAU;return a;}
@@ -664,7 +663,10 @@ function padMenuTick(dt){
     padFocus=(padFocus+(p.navY>0?1:-1)+btns.length)%btns.length; padNavCd=0.18; beep(700,0.03,0.04);
   }
   padFocus=clamp(padFocus,0,btns.length-1);
-  btns.forEach((b,i)=>b.classList.toggle('padfocus',i===padFocus));
+  // clear every outline, not just the visible ones — a page change would otherwise
+  // leave the old page's button still wearing the focus ring
+  document.querySelectorAll('.padfocus').forEach(b=>b.classList.remove('padfocus'));
+  btns[padFocus].classList.add('padfocus');
   if(p.ok&&!padOkPrev){ ensureAudio(); btns[padFocus].click(); padFocus=0; padNavCd=0.3; }
   // the first back button that is actually ON SCREEN — they all exist in the DOM
   if(p.back&&!padBackPrev){
@@ -676,9 +678,20 @@ function padMenuTick(dt){
 // live read-out on the device page, so you can see the pad working before you race
 function padLiveTick(){
   const box=el('padLive'); if(!box)return;
-  const on=menuPage==='device'&&padCount()>0;
+  const pads=padCount();
+  // also shown with no pad yet, if you asked for one — that's when you need the nudge
+  const on=menuPage==='device'&&(pads>0||device==='pad');
   box.classList.toggle('show',on); if(!on)return;
-  const p=readPad(0); if(!p)return;
+  const hint=el('padHint');
+  if(hint)hint.innerHTML=pads?'Move the stick and squeeze the triggers — you should see this move. '
+    +'<b>✕</b> selects, <b>○</b> goes back, so you can stay on the pad.'
+    :'<b>Press any button on your controller</b> — browsers keep gamepads hidden until you do. '
+    +'It will jump straight on once it wakes up.';
+  const p=readPad(0);
+  if(!p){ el('padSteer').textContent='▯▯▯▯▯▯▯▯▯▯'; el('padGas').textContent='▯▯▯▯'; el('padBrk').textContent='▯▯▯▯'; return; }
+  // only auto-advance if we were waiting — otherwise coming back to change device
+  // with a pad plugged in would bounce straight out again
+  if(padWaiting){ padWaiting=false; showPage('root'); return; }
   const bar=(v,neg)=>{const n=Math.round(Math.abs(v)*10);
     return (neg&&v<0?'◀':'')+'▮'.repeat(n)+'▯'.repeat(10-n)+(neg&&v>0?'▶':'');};
   el('padSteer').textContent=bar(p.steer,true);
@@ -783,7 +796,7 @@ function showPage(p){
   on('onlineBox',p==='online');
   const setup=el('pgSetup'); if(setup)setup.classList.toggle('tight',p==='online');
   if(p==='offline'||p==='local'||p==='online')mode=p;
-  const sub={device:'WHAT ARE YOU PLAYING ON?',root:'23 CIRCUITS · 400 MPH · UP TO 23 CARS',
+  const sub={device:'CHOOSE WHAT YOU\'RE PLAYING ON',root:'23 CIRCUITS · 400 MPH · UP TO 23 CARS',
     mp:'ONLINE OR SPLIT SCREEN',offline:'OFFLINE · YOU AND THE BOTS',
     online:'ONLINE · UP TO 22 PLAYERS',local:'LOCAL PLAY · SPLIT SCREEN'}[p];
   if(el('menuSub')&&sub)el('menuSub').textContent=sub;
@@ -888,11 +901,19 @@ function backToMenu(){
 }
 el('menuBtn').onclick=backToMenu;
 /* ---- device page: phone / laptop / controller ---- */
-el('devPhone').onclick=()=>{ensureAudio();setDevice('touch',true);};
-el('devKeys').onclick=()=>{ensureAudio();setDevice('keys',true);};
-el('devPad').onclick=()=>{ensureAudio();refreshPadStatus();setDevice('pad',true);};
-el('devNext').onclick=()=>{ensureAudio();showPage('root');};
-el('rootBack').onclick=()=>showPage('device');
+// picking a device goes straight on to MULTIPLAYER / OFFLINE — one tap, no CONTINUE.
+// The exception: CONTROLLER with nothing plugged in would strand you with no input,
+// so stay put and show the live read-out until the pad wakes up.
+let padWaiting=false;          // true only while we're waiting for a pad to wake up
+function chooseDevice(d){
+  ensureAudio(); refreshPadStatus(); setDevice(d,true);
+  if(d==='pad'&&!padCount()){ padWaiting=true; padLiveTick(); return; }
+  padWaiting=false; showPage('root');
+}
+el('devPad').onclick=()=>chooseDevice('pad');
+el('devKeys').onclick=()=>chooseDevice('keys');
+el('devPhone').onclick=()=>chooseDevice('touch');
+el('rootBack').onclick=()=>{padWaiting=false;showPage('device');};
 /* ---- mode pages: MULTIPLAYER | OFFLINE, then ONLINE | LOCAL PLAY ---- */
 el('btnOffline').onclick=()=>{ensureAudio();seats=1;showPage('offline');showMenuGrid();};
 el('btnMulti').onclick=()=>{ensureAudio();showPage('mp');};
