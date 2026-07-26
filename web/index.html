@@ -35,7 +35,7 @@
   #boostFill{background:linear-gradient(90deg,#12b6ff,#00e0ff)}
   #tyreFill{background:linear-gradient(90deg,#e11020,#f2b705,#37d07a)}
   .cash{color:var(--yellow);font-weight:900;letter-spacing:0}
-  .mapgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;max-height:34vh;overflow-y:auto;
+  .mapgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;max-height:26vh;overflow-y:auto;
     margin:6px 0 4px;padding:3px;border:1px solid var(--line);border-radius:10px}
   .mapcard{background:#0c1220;border:1px solid var(--line);border-radius:9px;padding:9px 8px;cursor:pointer;text-align:center;transition:.12s}
   .mapcard:hover{border-color:#3a465e}
@@ -145,6 +145,12 @@
   .backBtn{display:block;width:100%;margin-top:10px;padding:11px;border:1px solid var(--line);border-radius:10px;
     background:#111a2c;color:var(--dim);font:inherit;font-weight:700;font-size:13px;cursor:pointer}
   .backBtn:hover{color:var(--txt)}
+  .actions{position:sticky;bottom:-28px;z-index:3;padding:10px 0 28px;margin-bottom:-28px;
+    background:linear-gradient(180deg,rgba(11,16,27,0),rgba(11,16,27,.94) 30%)}
+  .actions .play{margin-top:0}
+  /* the online page carries the lobby browser too, so give the circuit list less room */
+  #pgSetup.tight .mapgrid{max-height:15vh}
+  #pgSetup.tight .lobbylist{max-height:132px}
   /* ---- bots slider ---- */
   .botrow{margin-top:14px;border:1px solid var(--line);border-radius:12px;padding:11px 14px;background:#0c1220}
   .botrow .btop{display:flex;align-items:baseline;gap:8px}
@@ -283,8 +289,11 @@
         <div class="mphint" id="mpHint">Pick a lobby from the list, or create your own and share the code — everyone in a lobby races the same circuit together. A lobby fills to 22; you can start as soon as two of you are in.</div>
         <input id="mpUrl" type="hidden">
       </div>
-      <button class="play" id="playBtn" disabled>LOADING CAR…</button>
-      <button class="backBtn" id="setupBack">◂ Back</button>
+      <!-- pinned so the circuit list can scroll without pushing START RACE off screen -->
+      <div class="actions">
+        <button class="play" id="playBtn" disabled>LOADING CAR…</button>
+        <button class="backBtn" id="setupBack">◂ Back</button>
+      </div>
       </div><!-- /pgSetup -->
 
       <div class="keys"><span><b><kbd>W</kbd>/<kbd>↑</kbd></b> Throttle</span><span><b><kbd>S</kbd>/<kbd>↓</kbd></b> Brake</span>
@@ -524,13 +533,14 @@ function showPage(p){
   on('botRow',p==='offline'||p==='local');       // online bots would desync between clients
   on('seatBox',p==='local');
   on('onlineBox',p==='online');
+  const setup=el('pgSetup'); if(setup)setup.classList.toggle('tight',p==='online');
   if(p==='offline'||p==='local'||p==='online')mode=p;
   const sub={root:'23 CIRCUITS · 400 MPH · UP TO 23 CARS',mp:'ONLINE OR SPLIT SCREEN',
     offline:'OFFLINE · YOU AND THE BOTS',online:'ONLINE · UP TO 22 PLAYERS',
     local:'LOCAL PLAY · SPLIT SCREEN'}[p];
   if(el('menuSub')&&sub)el('menuSub').textContent=sub;
   if(mode==='online'){ if(el('mpEnable'))el('mpEnable').checked=true; if(!mpConnected)mpConnect(); }
-  syncSetup();
+  syncSetup(); renderLobbies();
 }
 // keep the bots slider, seats and the start button honest about the current mode
 function syncSetup(){
@@ -1205,7 +1215,9 @@ const escHtml=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&
 const trackName=i=>(TRACKS[i]&&TRACKS[i].name)||('Unknown circuit #'+(i|0));
 function renderLobbies(){
   const wrap=el('lobbyWrap'),list=el('lobbyList'),mine=el('lobbyMine'); if(!wrap||!list)return;
-  wrap.classList.toggle('show',mpEnabled());
+  // the browser belongs to the online page — show it as soon as you get there, with
+  // its own "connecting…" state, rather than waiting for the server's first reply
+  wrap.classList.toggle('show',mode==='online');
   // ---- the lobby you're in, with its full details ----
   if(mine){
     mine.classList.toggle('show',!!myLobby);
@@ -1420,13 +1432,18 @@ let composer=null, fxaaPass=null, bloomPass=null;
 try{
   if(THREE.EffectComposer && THREE.RenderPass && THREE.UnrealBloomPass && THREE.ShaderPass && THREE.FXAAShader && THREE.GammaCorrectionShader){
     composer=new THREE.EffectComposer(renderer);
-    if(THREE.SSAOPass){   // ambient occlusion (contact shadows) — renders the scene too
-      const ssao=new THREE.SSAOPass(scene,camera,innerWidth,innerHeight);
-      ssao.kernelRadius=12; ssao.minDistance=0.003; ssao.maxDistance=0.08;
-      composer.addPass(ssao);
-    } else {
-      composer.addPass(new THREE.RenderPass(scene,camera));
+    // SSAOPass needs THREE.SSAOShader, which isn't among the pp/ files shipped here —
+    // its constructor throws, so keep the attempt isolated. Letting it escape took the
+    // whole composer down with it and silently cost us bloom, FXAA and the sRGB pass.
+    let ssaoOk=false;
+    if(THREE.SSAOPass && THREE.SSAOShader){   // ambient occlusion (contact shadows) — renders the scene too
+      try{
+        const ssao=new THREE.SSAOPass(scene,camera,innerWidth,innerHeight);
+        ssao.kernelRadius=12; ssao.minDistance=0.003; ssao.maxDistance=0.08;
+        composer.addPass(ssao); ssaoOk=true;
+      }catch(e){ ssaoOk=false; }
     }
+    if(!ssaoOk) composer.addPass(new THREE.RenderPass(scene,camera));
     bloomPass=new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.30,0.5,0.85); // strength,radius,threshold
     composer.addPass(bloomPass);
     fxaaPass=new THREE.ShaderPass(THREE.FXAAShader);
