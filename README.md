@@ -63,15 +63,50 @@ first person to go online after a quiet spell waits. The client retries automati
 and the status pill reads `waking server… n/6` while it does — that is normal, not a
 fault. `?server=wss://…` in the URL overrides the built-in address for a quick test.
 
-### If the deployed site misbehaves but a local `index.html` is fine
-1. Check the **build stamp** in the menu footer against the one you deployed. If it's
-   older, it's a cache — the site is meant to send `no-store` for `/` and `/index.html`
-   (see `netlify.toml`), so a stamp mismatch means the headers aren't being applied.
-2. Confirm Netlify's **publish directory is `web`** and the base directory is empty. A
-   site publishing the repo root serves no `index.html` at all.
-3. Open the browser console. Every script the page loads is relative and lives in
-   `web/` — a 404 there (Netlify is case-sensitive, Windows is not) stops the game
-   before it starts.
+### The published site is missing recent changes
+
+First, find out **which build is actually live** — one command, no guessing:
+
+```bash
+curl -s https://apexgpracing.netlify.app/ | grep -o "const BUILD='[^']*'"
+```
+
+Compare it with the `BUILD` constant in `web/index.html`. If the live one is older (or
+missing entirely), the site is **not deploying** — the code is fine and no amount of
+editing it will help. Check, in this order:
+
+1. **Netlify → Deploys.** Is the newest deploy your newest commit? If the list stops at
+   an older commit, either auto-publishing is stopped / the site is *locked to a deploy*
+   (Netlify has a "Stop auto publishing" toggle and a per-deploy lock), or the site
+   isn't linked to this repo at all — a site first created by drag-and-drop **never**
+   auto-deploys from git, no matter how many times you push.
+2. **Site settings → Build & deploy.** Publish directory must be `web`, base directory
+   empty, build command empty. A site publishing the repo root serves no `index.html`.
+3. **Branch.** Netlify must watch the branch you push (`main`).
+
+**To publish right now without touching any of that**, drag the sibling `apexgp3d-web`
+folder onto <https://app.netlify.com/drop>. It carries the whole game — the same
+`index.html` plus `three.min.js`, `GLTFLoader.js`, `carmodel.js` and `pp/` — with a
+`netlify.toml` that publishes `.`, so it stands alone. `node sync_deploy.js` keeps it
+current.
+
+### If the site loads but the game doesn't start
+Open the browser console. Every script the page loads is relative and lives in `web/`,
+so a 404 there stops the game dead — and Netlify is case-sensitive where Windows isn't.
+
+## Keeping the copies in step
+
+The game is authored once and copied to everywhere that deploys. Doing that by hand is
+exactly how a site ends up serving an old build, so:
+
+```bash
+node sync_deploy.js          # copy everywhere, rebuild the single-file builds, verify
+node sync_deploy.js --check   # verify only; non-zero exit if anything is stale
+```
+
+It re-reads every target afterwards and prints the build id, so "did that actually land"
+is never a guess. Targets absent on your machine are skipped, so it is safe to run from
+a fresh clone of just this repo.
 
 ## Controls
 `W/↑` throttle · `S/↓` brake · `A/D` steer · `Shift` DRS · `Space` handbrake · `C` camera · `P` pause · `M` mute
